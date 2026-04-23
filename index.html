@@ -1303,22 +1303,38 @@
   /* soft pastel sky: rose → peach → pastel pink → lavender → dusty blue
      Move the gradient onto html so iOS Safari overscroll + rotation never
      reveals white. Body is transparent on top. */
-  /* html solid color = the color shown on iOS rubber-band overscroll above
-     the page. Use the pastel mid-tone so pulling up or down reveals pastel,
-     not a dark blue band. */
+  /* Kill rubber-band overscroll entirely — rubber-band is what reveals the
+     "outside" of the fixed background on iOS. With overscroll-behavior:none
+     the page never bounces past its edges, so there is no outside to show. */
+  html, body{
+    overscroll-behavior: none !important;
+    overscroll-behavior-y: none !important;
+  }
+  /* Paint the full gradient on html so any theoretical edge beyond the fixed
+     layer is still a gradient color, matching exactly. */
   html{
     min-height: 100%;
+    background:
+      radial-gradient(1000px 700px at 20% 10%, rgba(255,235,210,.55) 0%, rgba(255,235,210,0) 60%),
+      radial-gradient(1100px 800px at 85% 92%, rgba(200,220,255,.4) 0%, rgba(200,220,255,0) 65%),
+      linear-gradient(180deg,
+        #f7d4c8 0%, #f3c8bf 10%, #e8bccd 22%, #cdb4d8 36%,
+        #a8b0d8 52%, #8599c8 68%, #5e7db0 84%, #3e578f 100%)
+      no-repeat !important;
+    background-attachment: fixed !important;
+    background-size: 100% 100% !important;
     background-color: #e8bccd !important;
   }
   body{
     background: transparent !important;
-    overscroll-behavior: none;
   }
-  /* Viewport-locked gradient layer — always behind content, always covers
-     the whole visible area. Prevents white bands on iOS rubber-band scroll
-     and on orientation change. */
+  /* Redundant viewport-locked gradient layer. Uses 100dvh so on mobile it
+     tracks the dynamic viewport (browser chrome show/hide) exactly. */
   .bg-layer{
-    position: fixed; inset: 0; z-index: -1; pointer-events: none;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    width: 100vw; height: 100vh; height: 100dvh;
+    z-index: -1; pointer-events: none;
     background:
       repeating-linear-gradient(0deg, rgba(255,255,255,.04) 0 2px, transparent 2px 4px),
       radial-gradient(1000px 700px at 20% 10%, rgba(255,235,210,.55) 0%, rgba(255,235,210,0) 60%),
@@ -1326,6 +1342,7 @@
       linear-gradient(180deg,
         #f7d4c8 0%, #f3c8bf 10%, #e8bccd 22%, #cdb4d8 36%,
         #a8b0d8 52%, #8599c8 68%, #5e7db0 84%, #3e578f 100%);
+    background-size: 100% 100%;
   }
 
   /* lighter vignette + gentler scanlines so the pastel reads airy */
