@@ -1,57 +1,57 @@
-// Vercel Edge Function: GET /v/{id}
+// Vercel Node Function: GET /v/{id}
 // Proxies a Drive file so <video> can embed it cross-origin.
-// Forwards Range headers; strips the hostile response headers (CORP, CSP,
-// content-disposition: attachment) that prevent inline playback.
-//
-// Buffers the body to an ArrayBuffer before responding. This is necessary
-// because Vercel's Edge Runtime drops Content-Length on ReadableStream
-// bodies, and Safari refuses to play video without Content-Length set.
-// Archive media fits comfortably in memory (largest clip ~9 MB).
-
-export const config = { runtime: 'edge' };
+// Explicitly sets Content-Length (Safari and iOS refuse to play video
+// without it). Vercel's Edge runtime strips Content-Length on all
+// responses, so this must run on Node.
 
 const ID_RE = /^[A-Za-z0-9_-]{10,80}$/;
 
-export default async function handler(req) {
-  const url = new URL(req.url);
-  const id = url.pathname.split('/').filter(Boolean).pop() || '';
+export default async function handler(req, res) {
+  const id = (req.query && req.query.id) || '';
   if (!ID_RE.test(id)) {
-    return new Response('bad id', { status: 400 });
+    res.status(400).send('bad id');
+    return;
   }
-  const upstream = `https://drive.usercontent.google.com/download?id=${id}&export=download`;
+  const upstreamUrl = `https://drive.usercontent.google.com/download?id=${id}&export=download`;
 
-  const fwd = new Headers();
-  const range = req.headers.get('range');
-  if (range) fwd.set('Range', range);
+  const headers = {};
+  if (req.headers.range) headers['Range'] = req.headers.range;
 
-  const upstreamRes = await fetch(upstream, {
-    method: req.method === 'HEAD' ? 'HEAD' : 'GET',
-    headers: fwd,
-    redirect: 'follow',
-  });
-
-  const out = new Headers();
-  const keep = new Set([
-    'content-type',
-    'content-range',
-    'last-modified',
-    'etag',
-  ]);
-  for (const [k, v] of upstreamRes.headers) {
-    if (keep.has(k.toLowerCase())) out.set(k, v);
-  }
-  out.set('Content-Disposition', 'inline');
-  out.set('Accept-Ranges', 'bytes');
-  out.set('Access-Control-Allow-Origin', '*');
-  out.set('Access-Control-Expose-Headers', 'Content-Length, Content-Range, Accept-Ranges');
-  out.set('Cross-Origin-Resource-Policy', 'cross-origin');
-  out.set('Cache-Control', 'public, max-age=3600, must-revalidate');
-
-  if (req.method === 'HEAD' || !upstreamRes.ok && upstreamRes.status !== 206) {
-    return new Response(null, { status: upstreamRes.status, headers: out });
+  let upstream;
+  try {
+    upstream = await fetch(upstreamUrl, {
+      method: req.method === 'HEAD' ? 'HEAD' : 'GET',
+      headers,
+      redirect: 'follow',
+    });
+  } catch (err) {
+    res.status(502).send('upstream error: ' + (err && err.message));
+    return;
   }
 
-  // Buffer the response bytes so the runtime auto-populates Content-Length.
-  const buf = await upstreamRes.arrayBuffer();
-  return new Response(buf, { status: upstreamRes.status, headers: out });
+  // Copy through only safe/useful headers from upstream.
+  const ct = upstream.headers.get('content-type');
+  const cr = upstream.headers.get('content-range');
+  const lm = upstream.headers.get('last-modified');
+  const et = upstream.headers.get('etag');
+
+  if (ct) res.setHeader('Content-Type', ct);
+  if (cr) res.setHeader('Content-Range', cr);
+  if (lm) res.setHeader('Last-Modified', lm);
+  if (et) res.setHeader('ETag', et);
+  res.setHeader('Content-Disposition', 'inline');
+  res.setHeader('Accept-Ranges', 'bytes');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Expose-Headers', 'Content-Length, Content-Range, Accept-Ranges');
+  res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+  res.setHeader('Cache-Control', 'public, max-age=3600, must-revalidate');
+
+  if (req.method === 'HEAD') {
+    res.status(upstream.status).end();
+    return;
+  }
+
+  const buf = Buffer.from(await upstream.arrayBuffer());
+  res.setHeader('Content-Length', String(buf.length));
+  res.status(upstream.status).end(buf);
 }
