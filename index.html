@@ -1284,37 +1284,38 @@
      DUSK PASS — lofi late-evening tonality + legible outlined whites
      ========================================================================== */
 
-  /* repaint the sky: dusty peach → lavender → deep teal → aubergine */
+  /* soft pastel sky: rose → peach → pastel pink → lavender → dusty blue */
   body{
     background:
-      repeating-linear-gradient(0deg, rgba(255,255,255,.02) 0 2px, transparent 2px 4px),
-      radial-gradient(900px 600px at 15% 12%, rgba(255,190,140,.28) 0%, rgba(255,190,140,0) 58%),
-      radial-gradient(1100px 700px at 80% 85%, rgba(90,140,180,.3) 0%, rgba(90,140,180,0) 60%),
+      repeating-linear-gradient(0deg, rgba(255,255,255,.04) 0 2px, transparent 2px 4px),
+      radial-gradient(1000px 700px at 20% 10%, rgba(255,235,210,.55) 0%, rgba(255,235,210,0) 60%),
+      radial-gradient(1100px 800px at 85% 92%, rgba(200,220,255,.4) 0%, rgba(200,220,255,0) 65%),
       linear-gradient(180deg,
-        #d8a890 0%,     /* dusty peach horizon */
-        #b89aad 18%,    /* muted rose-lavender */
-        #8a7fa8 34%,    /* twilight lilac */
-        #4f5e8a 52%,    /* deep dusk blue */
-        #2a3e66 70%,    /* night water */
-        #15243f 88%,    /* deeper ocean */
-        #0a1530 100%    /* abyss */
+        #f7d4c8 0%,      /* blush rose */
+        #f3c8bf 10%,     /* creamy coral */
+        #e8bccd 22%,     /* pastel pink-lilac */
+        #cdb4d8 36%,     /* soft lavender */
+        #a8b0d8 52%,     /* periwinkle */
+        #8599c8 68%,     /* dusty blue */
+        #5e7db0 84%,     /* cooler pastel blue */
+        #3e578f 100%     /* deep pastel navy */
       ) !important;
   }
 
-  /* stronger vignette + heavier scanlines for lofi feel */
+  /* lighter vignette + gentler scanlines so the pastel reads airy */
   body::after{
     background:
-      repeating-linear-gradient(0deg, rgba(5,10,25,.18) 0 1px, transparent 1px 3px),
-      radial-gradient(130% 90% at 50% 50%, transparent 45%, rgba(5,10,25,.55) 100%) !important;
+      repeating-linear-gradient(0deg, rgba(80,60,100,.06) 0 1px, transparent 1px 3px),
+      radial-gradient(140% 100% at 50% 50%, transparent 55%, rgba(60,50,90,.2) 100%) !important;
     mix-blend-mode: multiply !important;
-    opacity: .8 !important;
+    opacity: .5 !important;
   }
 
-  /* warm sunset glow tint on top of everything (low alpha) */
+  /* soft warm haze up top, cool haze toward the bottom */
   body::before{
     background:
-      radial-gradient(ellipse 60vw 20vh at 50% -5%, rgba(255,170,120,.18), transparent 70%),
-      radial-gradient(ellipse 40vw 20vh at 80% 10%, rgba(255,140,180,.12), transparent 70%) !important;
+      radial-gradient(ellipse 70vw 25vh at 45% -5%, rgba(255,220,200,.32), transparent 70%),
+      radial-gradient(ellipse 50vw 30vh at 90% 100%, rgba(200,220,255,.28), transparent 70%) !important;
     mix-blend-mode: screen !important;
   }
 
