@@ -2,7 +2,23 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#e8bccd" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+<link rel="apple-touch-icon" href="/icon-512.png" />
+<meta property="og:title" content="Yumemono Archive — 夢物" />
+<meta property="og:description" content="A preservation of the Yumemono X community: 1,349 posts, 255 members, 965 media items mirrored to durable storage." />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://yumemono-archive.vercel.app/" />
+<meta property="og:image" content="https://yumemono-archive.vercel.app/og.png" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="1200" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Yumemono Archive — 夢物" />
+<meta name="twitter:description" content="A preservation of the Yumemono X community: 1,349 posts, 255 members, 965 media items mirrored to durable storage." />
+<meta name="twitter:image" content="https://yumemono-archive.vercel.app/og.png" />
 <title>Yumemono Archive</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1287,26 +1303,16 @@
   /* soft pastel sky: rose → peach → pastel pink → lavender → dusty blue
      Move the gradient onto html so iOS Safari overscroll + rotation never
      reveals white. Body is transparent on top. */
+  /* html solid color = the color shown on iOS rubber-band overscroll above
+     the page. Use the pastel mid-tone so pulling up or down reveals pastel,
+     not a dark blue band. */
   html{
     min-height: 100%;
-    background:
-      radial-gradient(1000px 700px at 20% 10%, rgba(255,235,210,.55) 0%, rgba(255,235,210,0) 60%),
-      radial-gradient(1100px 800px at 85% 92%, rgba(200,220,255,.4) 0%, rgba(200,220,255,0) 65%),
-      linear-gradient(180deg,
-        #f7d4c8 0%,
-        #f3c8bf 10%,
-        #e8bccd 22%,
-        #cdb4d8 36%,
-        #a8b0d8 52%,
-        #8599c8 68%,
-        #5e7db0 84%,
-        #3e578f 100%
-      ) fixed no-repeat !important;
-    background-color: #3e578f !important;
+    background-color: #e8bccd !important;
   }
   body{
     background: transparent !important;
-    overscroll-behavior-y: none;
+    overscroll-behavior: none;
   }
   /* Viewport-locked gradient layer — always behind content, always covers
      the whole visible area. Prevents white bands on iOS rubber-band scroll
@@ -2025,15 +2031,18 @@
   @media (max-width: 720px){
     .app{ padding: 10px 8px 30px !important; gap: 10px !important }
 
-    /* header layout: home | tiny search | members | info — all on one line.
-       Search is capped at a small fixed width; any extra viewport goes to
-       the right of the info button (but grid auto-sizes tightly anyway). */
+    /* header layout: home | tiny search | members | info — ONE LINE.
+       Must explicitly undo .search{grid-column: 1/-1} from the 980px rule
+       above (which was wrapping search + pushing the other buttons to
+       a second row). */
     .header{
-      grid-template-columns: auto minmax(0, 120px) auto auto !important;
+      grid-template-columns: auto minmax(70px, 120px) auto auto !important;
       gap: 6px !important; padding: 8px 8px !important;
       border-radius: 10px !important;
-      justify-content: start;
+      grid-auto-flow: column !important;
     }
+    .header > *{ grid-column: auto !important; grid-row: 1 !important }
+    .search{ grid-column: auto !important; grid-row: 1 !important }
     .mobile-only{ display: grid !important }
 
     /* brand collapses to the onigiri tile only — text hidden to save space */

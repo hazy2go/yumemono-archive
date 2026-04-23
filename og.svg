@@ -1,0 +1,95 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" shape-rendering="crispEdges">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f7d4c8"/>
+      <stop offset=".25" stop-color="#e8bccd"/>
+      <stop offset=".5" stop-color="#cdb4d8"/>
+      <stop offset=".75" stop-color="#8599c8"/>
+      <stop offset="1" stop-color="#3e578f"/>
+    </linearGradient>
+    <radialGradient id="warm" cx=".25" cy=".15" r=".6">
+      <stop offset="0" stop-color="#ffecd2" stop-opacity=".6"/>
+      <stop offset="1" stop-color="#ffecd2" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="cool" cx=".85" cy=".9" r=".5">
+      <stop offset="0" stop-color="#c8dcff" stop-opacity=".45"/>
+      <stop offset="1" stop-color="#c8dcff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- sky -->
+  <rect width="1200" height="630" fill="url(#sky)" shape-rendering="auto"/>
+  <rect width="1200" height="630" fill="url(#warm)" shape-rendering="auto"/>
+  <rect width="1200" height="630" fill="url(#cool)" shape-rendering="auto"/>
+
+  <!-- scanlines -->
+  <g shape-rendering="auto" opacity=".12">
+    <rect width="1200" height="630" fill="url(#lines)"/>
+  </g>
+  <defs>
+    <pattern id="lines" width="1" height="3" patternUnits="userSpaceOnUse">
+      <rect width="1" height="1" fill="#2a2040"/>
+    </pattern>
+  </defs>
+
+  <!-- giant pixel onigiri, centered vertically, left of text -->
+  <g transform="translate(110, 175) scale(18)">
+    <g fill="#0a0f22">
+      <rect x="7" y="0" width="2" height="1"/>
+      <rect x="5" y="1" width="1" height="1"/><rect x="10" y="1" width="1" height="1"/>
+      <rect x="4" y="2" width="1" height="1"/><rect x="11" y="2" width="1" height="1"/>
+      <rect x="3" y="3" width="1" height="1"/><rect x="12" y="3" width="1" height="1"/>
+      <rect x="2" y="4" width="1" height="1"/><rect x="13" y="4" width="1" height="1"/>
+      <rect x="1" y="5" width="1" height="1"/><rect x="14" y="5" width="1" height="1"/>
+      <rect x="0" y="6" width="1" height="6"/><rect x="15" y="6" width="1" height="6"/>
+      <rect x="0" y="12" width="16" height="1"/>
+    </g>
+    <g fill="#fffaf0">
+      <rect x="7" y="1" width="2" height="1"/>
+      <rect x="6" y="2" width="4" height="1"/>
+      <rect x="5" y="3" width="6" height="1"/>
+      <rect x="4" y="4" width="8" height="1"/>
+      <rect x="3" y="5" width="10" height="1"/>
+      <rect x="2" y="6" width="12" height="1"/>
+      <rect x="1" y="7" width="14" height="1"/>
+      <rect x="1" y="8" width="14" height="1"/>
+    </g>
+    <g fill="#f2e2c6">
+      <rect x="12" y="7" width="2" height="1"/>
+      <rect x="13" y="8" width="1" height="1"/>
+    </g>
+    <g fill="#ffb8d4">
+      <rect x="3" y="7" width="1" height="1"/>
+      <rect x="12" y="7" width="1" height="1"/>
+    </g>
+    <g fill="#0a0f22">
+      <rect x="5" y="7" width="1" height="1"/>
+      <rect x="10" y="7" width="1" height="1"/>
+      <rect x="7" y="8" width="1" height="1"/>
+      <rect x="8" y="8" width="1" height="1"/>
+    </g>
+    <g fill="#162318">
+      <rect x="1" y="9" width="14" height="3"/>
+    </g>
+    <g fill="#2a3f28">
+      <rect x="1" y="9" width="14" height="1"/>
+    </g>
+    <g fill="#fffaf0">
+      <rect x="3" y="10" width="1" height="1"/>
+      <rect x="8" y="11" width="1" height="1"/>
+      <rect x="12" y="10" width="1" height="1"/>
+    </g>
+  </g>
+
+  <!-- title text right of onigiri -->
+  <g shape-rendering="auto">
+    <text x="490" y="260" font-family="'DotGothic16','Courier New',monospace" font-size="90" fill="#fffaf0" stroke="#0a0f22" stroke-width="5" paint-order="stroke">Yumemono</text>
+    <text x="490" y="340" font-family="'DotGothic16','Courier New',monospace" font-size="58" fill="#ffd98a" stroke="#0a0f22" stroke-width="4" paint-order="stroke">ARCHIVE</text>
+    <text x="492" y="415" font-family="'Courier New',monospace" font-size="28" fill="#fffaf0" stroke="#0a0f22" stroke-width="3" paint-order="stroke" font-weight="700">1,349 posts · 255 members · 965 media</text>
+    <text x="492" y="455" font-family="'Courier New',monospace" font-size="24" fill="#e8c4a8" stroke="#0a0f22" stroke-width="2.5" paint-order="stroke">preserved from May 2025 → Apr 2026</text>
+  </g>
+
+  <!-- bottom URL ribbon -->
+  <rect x="0" y="565" width="1200" height="65" fill="#1a2040" opacity=".85" shape-rendering="auto"/>
+  <text x="600" y="610" text-anchor="middle" font-family="'Courier New',monospace" font-size="28" fill="#fffaf0" letter-spacing="3" shape-rendering="auto">◆ yumemono-archive.vercel.app ◆</text>
+</svg>
