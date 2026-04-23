@@ -2028,6 +2028,45 @@
 
   /* mobile-only header button (members) — hidden on desktop */
   .mobile-only{ display: none }
+
+  /* =========================================================================
+     DESKTOP HEADER (≥721px): flex row with home on the left, compact search,
+     and the gallery/info cluster on the right. All three tiles same height.
+     ========================================================================= */
+  @media (min-width: 721px){
+    .header{
+      display: flex !important;
+      grid-template-columns: none !important;
+      align-items: center;
+      gap: 14px !important;
+      padding: 10px 14px !important;
+      border-radius: 20px !important;
+    }
+    .header > *{ grid-column: auto !important; grid-row: auto !important }
+    .brand{ flex: 0 0 auto }
+    .search{
+      flex: 0 1 280px !important;
+      max-width: 280px !important;
+      height: 56px !important;
+      border-radius: 14px !important;
+      padding: 6px 6px 6px 16px !important;
+    }
+    .search input{ font-size: 15px !important }
+    .search-btn{
+      width: 42px !important; height: 42px !important;
+      border-radius: 10px !important;
+    }
+    #gallery-btn{ margin-left: auto !important }
+    .header-btn, .gear{
+      flex: 0 0 56px !important;
+      width: 56px !important; height: 56px !important;
+      border-radius: 14px !important;
+    }
+    .header-btn svg, .gear svg{
+      width: 24px !important; height: 24px !important;
+    }
+    #members-btn{ display: none !important }
+  }
   .header-btn{
     width: 44px; height: 44px; padding: 0;
     display: grid; place-items: center; cursor: pointer;
