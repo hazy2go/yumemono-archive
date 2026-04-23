@@ -2048,16 +2048,30 @@
   @media (max-width: 720px){
     .app{ padding: 10px 8px 30px !important; gap: 10px !important }
 
-    /* header layout: home | tiny search | gallery | members | info — ONE LINE */
+    /* header layout (mobile): flex with equal gaps + right cluster.
+       Drop grid entirely — flex is easier to reason about for uniform
+       button spacing. The 3 right buttons form a fixed cluster that sits
+       snug against the right edge. */
     .header{
-      grid-template-columns: auto minmax(60px, 110px) auto auto auto !important;
-      gap: 5px !important; padding: 6px 6px !important;
+      display: flex !important;
+      grid-template-columns: none !important;
+      grid-auto-flow: unset !important;
+      align-items: center;
+      gap: 6px !important;
+      padding: 6px 8px !important;
       border-radius: 10px !important;
-      grid-auto-flow: column !important;
     }
-    .header > *{ grid-column: auto !important; grid-row: 1 !important }
-    .search{ grid-column: auto !important; grid-row: 1 !important }
+    .header > *{ grid-column: auto !important; grid-row: auto !important }
+    .brand{ flex: 0 0 auto }
+    .search{
+      flex: 0 1 110px !important;
+      min-width: 60px !important;
+      max-width: 110px !important;
+    }
+    /* push the 3 right buttons to the right edge, equally-spaced */
+    #gallery-btn{ margin-left: auto !important }
     .header-btn, .gear{
+      flex: 0 0 40px !important;
       width: 40px !important; height: 40px !important;
     }
     .header-btn svg{ width: 18px !important; height: 18px !important }
