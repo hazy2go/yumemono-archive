@@ -3239,7 +3239,9 @@
 
   function openVideoLightbox(driveId, xUrl){
     const v = $('#vlb-video');
-    v.src = '/v/' + encodeURIComponent(driveId);
+    // Cache-buster `?v=2` busts any previously-cached bad response from
+    // earlier deploys (when content-disposition was still "attachment").
+    v.src = '/v/' + encodeURIComponent(driveId) + '?v=2';
     const a = $('#vlb-open');
     if(xUrl){ a.href = xUrl; a.style.display = ''; } else { a.style.display = 'none'; }
     $('#video-lightbox').classList.add('open');

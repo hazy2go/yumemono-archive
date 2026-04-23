@@ -41,7 +41,9 @@ export default async function handler(req) {
   out.set('Content-Disposition', 'inline');
   out.set('Access-Control-Allow-Origin', '*');
   out.set('Cross-Origin-Resource-Policy', 'cross-origin');
-  out.set('Cache-Control', 'public, max-age=86400, immutable');
+  // Short cache + must-revalidate so a bad deploy is never permanently stuck
+  // in a client cache.
+  out.set('Cache-Control', 'public, max-age=3600, must-revalidate');
 
   return new Response(upstreamRes.body, { status: upstreamRes.status, headers: out });
 }
