@@ -1,0 +1,7 @@
+.DS_Store
+.vercel
+node_modules/
+*.sqlite3
+data-raw/
+scripts/__pycache__/
+/tmp
