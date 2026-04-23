@@ -28,13 +28,17 @@ export default async function handler(req) {
   const out = new Headers();
   for (const [k, v] of upstreamRes.headers) {
     const kl = k.toLowerCase();
+    // Strip headers that either break cross-origin embedding OR force download.
     if (kl === 'cross-origin-resource-policy') continue;
     if (kl === 'cross-origin-embedder-policy') continue;
     if (kl === 'cross-origin-opener-policy') continue;
     if (kl === 'content-security-policy') continue;
     if (kl === 'x-content-security-policy') continue;
+    if (kl === 'content-disposition') continue; // <-- was forcing download instead of inline playback
+    if (kl === 'x-frame-options') continue;
     out.set(k, v);
   }
+  out.set('Content-Disposition', 'inline');
   out.set('Access-Control-Allow-Origin', '*');
   out.set('Cross-Origin-Resource-Policy', 'cross-origin');
   out.set('Cache-Control', 'public, max-age=86400, immutable');

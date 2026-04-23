@@ -22,6 +22,8 @@ STRIP_HEADERS = {
     "cross-origin-opener-policy",
     "content-security-policy",
     "x-content-security-policy",
+    "content-disposition",  # else browser downloads instead of playing
+    "x-frame-options",
     "transfer-encoding",  # we stream chunked ourselves via WSGI
     "content-encoding",
     "connection",
