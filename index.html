@@ -2048,18 +2048,21 @@
   @media (max-width: 720px){
     .app{ padding: 10px 8px 30px !important; gap: 10px !important }
 
-    /* header layout: home | tiny search | members | info — ONE LINE.
-       Must explicitly undo .search{grid-column: 1/-1} from the 980px rule
-       above (which was wrapping search + pushing the other buttons to
-       a second row). */
+    /* header layout: home | tiny search | gallery | members | info — ONE LINE */
     .header{
-      grid-template-columns: auto minmax(70px, 120px) auto auto !important;
-      gap: 6px !important; padding: 8px 8px !important;
+      grid-template-columns: auto minmax(60px, 110px) auto auto auto !important;
+      gap: 5px !important; padding: 6px 6px !important;
       border-radius: 10px !important;
       grid-auto-flow: column !important;
     }
     .header > *{ grid-column: auto !important; grid-row: 1 !important }
     .search{ grid-column: auto !important; grid-row: 1 !important }
+    .header-btn, .gear{
+      width: 40px !important; height: 40px !important;
+    }
+    .header-btn svg{ width: 18px !important; height: 18px !important }
+    .gear svg{ width: 18px !important; height: 18px !important }
+    .search-btn{ width: 30px !important; height: 30px !important }
     .mobile-only{ display: grid !important }
 
     /* brand collapses to the onigiri tile only — text hidden to save space */
@@ -2253,6 +2256,122 @@
   /* ==========================================================================
      /mobile
      ========================================================================== */
+
+  /* ===== Lightbox navigation arrows (pixel) + meta strip ===== */
+  .lb-nav{
+    position: absolute; top: 50%; transform: translateY(-50%);
+    width: 60px; height: 78px; padding: 0; cursor: pointer; z-index: 5;
+    display: grid; place-items: center; color: #fff6e6;
+    background: linear-gradient(180deg, rgba(90,80,130,.85) 0%, rgba(40,30,80,.9) 100%);
+    border: 2px solid #0a0f22;
+    border-radius: 8px;
+    box-shadow:
+      3px 3px 0 #0a0f22,
+      inset 0 2px 0 rgba(255,255,255,.35),
+      inset 0 -2px 0 rgba(10,15,34,.35);
+    transition: .1s;
+  }
+  .lb-nav svg{ filter: drop-shadow(1px 1px 0 #0a0f22); image-rendering: pixelated }
+  .lb-nav:hover{
+    background: linear-gradient(180deg, rgba(130,100,170,.9) 0%, rgba(70,50,110,.95) 100%);
+    transform: translateY(-50%) translate(-1px,-1px);
+    box-shadow: 4px 4px 0 #0a0f22, inset 0 2px 0 rgba(255,255,255,.45);
+  }
+  .lb-nav:active{
+    transform: translateY(-50%) translate(1px,1px);
+    box-shadow: 1px 1px 0 #0a0f22, inset 0 1px 0 rgba(0,0,0,.3);
+  }
+  .lb-prev{ left: 16px }
+  .lb-next{ right: 16px }
+  .lb-nav[disabled]{ opacity: .35; pointer-events: none }
+
+  .lb-meta{
+    position: absolute; top: 18px; left: 50%; transform: translateX(-50%);
+    padding: 6px 14px; border-radius: 6px;
+    background: rgba(10,15,34,.7); border: 2px solid #0a0f22;
+    box-shadow: 2px 2px 0 #0a0f22, inset 0 1px 0 rgba(255,255,255,.3);
+    color: #fff6e6; font-family: 'VT323', monospace; font-size: 14px;
+    letter-spacing: 1.2px; z-index: 5;
+    text-shadow: 1px 1px 0 #0a0f22;
+  }
+
+  /* ===== Gallery window ===== */
+  .gallery-card{ width: min(1000px, 96vw); max-height: 90vh }
+  .gallery-body{ padding: 14px 16px !important }
+  .gallery-filter{
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 12px; padding-bottom: 12px;
+    border-bottom: 1px dashed rgba(255,240,230,.22);
+    flex-wrap: wrap;
+  }
+  .g-filter{
+    padding: 6px 14px; border-radius: 6px; cursor: pointer;
+    font-family: 'VT323', monospace; font-size: 14px; letter-spacing: 1.2px;
+    color: #fff6e6; text-shadow: 1px 1px 0 #0a0f22;
+    background: linear-gradient(180deg, rgba(90,80,130,.5), rgba(50,45,90,.65));
+    border: 2px solid #0a0f22;
+    box-shadow: 2px 2px 0 #0a0f22, inset 0 1px 0 rgba(255,255,255,.4);
+    transition: .1s;
+  }
+  .g-filter:hover{ transform: translate(-1px,-1px); box-shadow: 3px 3px 0 #0a0f22, inset 0 1px 0 rgba(255,255,255,.45) }
+  .g-filter.active{
+    background: linear-gradient(180deg, #ffdaa0, #e89a4a);
+    color: #1a1730;
+    text-shadow: 1px 1px 0 rgba(255,255,255,.5);
+  }
+  .gallery-count, .gallery-filter .members-count{
+    margin-left: auto;
+    font-family: 'VT323', monospace; font-size: 13px; letter-spacing: 1.3px;
+    color: #e8c4a8; text-shadow: 1px 1px 0 #0a0f22;
+  }
+  .gallery-grid{
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 6px;
+  }
+  .g-item{
+    position: relative; aspect-ratio: 1/1;
+    border: 2px solid #0a0f22; border-radius: 6px;
+    overflow: hidden; cursor: pointer; background: #0b2e5c;
+    box-shadow: 2px 2px 0 #0a0f22;
+    transition: .12s;
+  }
+  .g-item:hover{
+    transform: translate(-1px,-1px);
+    box-shadow: 4px 4px 0 #0a0f22;
+  }
+  .g-item img{
+    width: 100%; height: 100%; object-fit: cover; display: block;
+  }
+  .g-item .g-badge{
+    position: absolute; top: 4px; right: 4px;
+    width: 22px; height: 22px; border-radius: 4px;
+    display: grid; place-items: center;
+    background: rgba(10,15,34,.85); border: 1.5px solid #0a0f22;
+    color: #fff6e6;
+  }
+  .g-item .g-badge::after{
+    content: ""; width: 0; height: 0;
+    border-left: 8px solid #fff6e6;
+    border-top: 5px solid transparent; border-bottom: 5px solid transparent;
+    margin-left: 2px;
+    filter: drop-shadow(1px 1px 0 #0a0f22);
+  }
+  .g-item.broken{
+    display: grid; place-items: center;
+    font-family: 'VT323', monospace; font-size: 11px; color: #bfd8ff;
+    letter-spacing: 1.4px;
+  }
+
+  @media (max-width: 720px){
+    .lb-nav{ width: 44px; height: 60px }
+    .lb-nav svg{ width: 22px; height: 30px }
+    .lb-prev{ left: 6px }
+    .lb-next{ right: 6px }
+    .lb-meta{ top: 12px; font-size: 12px; padding: 4px 10px }
+    .gallery-grid{ grid-template-columns: repeat(3, 1fr); gap: 4px }
+    .g-item .g-badge{ width: 18px; height: 18px }
+  }
 
   /* responsive (legacy XP-button tweak kept for medium widths) */
   @media (max-width: 720px) and (min-width: 560px){
@@ -2615,6 +2734,16 @@
       </div>
     </div>
 
+    <button class="header-btn" id="gallery-btn" type="button" aria-label="Gallery" title="Gallery — all media">
+      <svg width="22" height="22" viewBox="0 0 10 10" shape-rendering="crispEdges" aria-hidden="true">
+        <g fill="currentColor">
+          <rect x="1" y="1" width="3" height="3"/>
+          <rect x="6" y="1" width="3" height="3"/>
+          <rect x="1" y="6" width="3" height="3"/>
+          <rect x="6" y="6" width="3" height="3"/>
+        </g>
+      </svg>
+    </button>
     <button class="header-btn mobile-only" id="members-btn" type="button" aria-label="Members" title="Members">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="9" cy="8" r="3.2"/>
@@ -2718,18 +2847,66 @@
 <!-- Image lightbox -->
 <div class="lightbox" id="lightbox" aria-hidden="true">
   <span class="lb-close" id="lb-close" aria-label="Close">×</span>
+  <button class="lb-nav lb-prev" id="lb-prev" aria-label="Previous">
+    <svg viewBox="0 0 10 14" shape-rendering="crispEdges" width="28" height="38"><g fill="currentColor"><rect x="7" y="2" width="2" height="1"/><rect x="5" y="3" width="2" height="1"/><rect x="3" y="4" width="2" height="1"/><rect x="1" y="5" width="2" height="2"/><rect x="3" y="7" width="2" height="1"/><rect x="5" y="8" width="2" height="1"/><rect x="7" y="9" width="2" height="1"/><rect x="1" y="7" width="2" height="2"/></g></svg>
+  </button>
+  <button class="lb-nav lb-next" id="lb-next" aria-label="Next">
+    <svg viewBox="0 0 10 14" shape-rendering="crispEdges" width="28" height="38"><g fill="currentColor"><rect x="1" y="2" width="2" height="1"/><rect x="3" y="3" width="2" height="1"/><rect x="5" y="4" width="2" height="1"/><rect x="7" y="5" width="2" height="2"/><rect x="5" y="7" width="2" height="1"/><rect x="3" y="8" width="2" height="1"/><rect x="1" y="9" width="2" height="1"/><rect x="7" y="7" width="2" height="2"/></g></svg>
+  </button>
   <img id="lb-img" alt="" />
+  <div class="lb-meta" id="lb-meta"></div>
   <a class="lb-open" id="lb-open" target="_blank" rel="noopener">open original ↗</a>
 </div>
 
 <!-- Video lightbox (fit-to-viewport with native fullscreen button) -->
 <div class="lightbox video-lightbox" id="video-lightbox" aria-hidden="true">
   <span class="lb-close" id="vlb-close" aria-label="Close">×</span>
+  <button class="lb-nav lb-prev" id="vlb-prev" aria-label="Previous">
+    <svg viewBox="0 0 10 14" shape-rendering="crispEdges" width="28" height="38"><g fill="currentColor"><rect x="7" y="2" width="2" height="1"/><rect x="5" y="3" width="2" height="1"/><rect x="3" y="4" width="2" height="1"/><rect x="1" y="5" width="2" height="2"/><rect x="3" y="7" width="2" height="1"/><rect x="5" y="8" width="2" height="1"/><rect x="7" y="9" width="2" height="1"/><rect x="1" y="7" width="2" height="2"/></g></svg>
+  </button>
+  <button class="lb-nav lb-next" id="vlb-next" aria-label="Next">
+    <svg viewBox="0 0 10 14" shape-rendering="crispEdges" width="28" height="38"><g fill="currentColor"><rect x="1" y="2" width="2" height="1"/><rect x="3" y="3" width="2" height="1"/><rect x="5" y="4" width="2" height="1"/><rect x="7" y="5" width="2" height="2"/><rect x="5" y="7" width="2" height="1"/><rect x="3" y="8" width="2" height="1"/><rect x="1" y="9" width="2" height="1"/><rect x="7" y="7" width="2" height="2"/></g></svg>
+  </button>
   <div class="vlb-stage" id="vlb-stage">
     <video id="vlb-video" controls playsinline preload="metadata"
            controlslist="nodownload" disablePictureInPicture></video>
   </div>
+  <div class="lb-meta" id="vlb-meta"></div>
   <a class="lb-open" id="vlb-open" target="_blank" rel="noopener">open original ↗</a>
+</div>
+
+<!-- Gallery window (all media) -->
+<div class="thread-modal" id="gallery-modal" aria-hidden="true">
+  <div class="xp-window gallery-card" role="dialog" aria-modal="true">
+    <div class="xp-titlebar">
+      <div class="xp-title">
+        <span class="xp-icon" aria-hidden="true">
+          <svg viewBox="0 0 10 10" shape-rendering="crispEdges" width="16" height="16">
+            <g fill="#fff6e6"><rect x="1" y="1" width="3" height="3"/><rect x="6" y="1" width="3" height="3"/><rect x="1" y="6" width="3" height="3"/><rect x="6" y="6" width="3" height="3"/></g>
+          </svg>
+        </span>
+        Gallery — all media
+      </div>
+      <div class="xp-buttons">
+        <button class="xp-btn" type="button" aria-label="Minimize" data-close-gallery>_</button>
+        <button class="xp-btn" type="button" aria-label="Maximize" data-maximize-gallery>◻</button>
+        <button class="xp-btn xp-close" id="gallery-close" type="button" aria-label="Close">×</button>
+      </div>
+    </div>
+    <div class="xp-body gallery-body">
+      <div class="gallery-filter">
+        <button class="g-filter active" data-g-filter="all" type="button">All</button>
+        <button class="g-filter" data-g-filter="photo" type="button">Photos</button>
+        <button class="g-filter" data-g-filter="video" type="button">Videos</button>
+        <span class="members-count" id="gallery-count">—</span>
+      </div>
+      <div class="gallery-grid" id="gallery-grid"></div>
+    </div>
+    <div class="xp-statusbar">
+      <span class="xp-status-cell" id="gallery-status">ready</span>
+      <span class="xp-status-cell xp-status-right">tap any to open</span>
+    </div>
+  </div>
 </div>
 
 <!-- About / info modal (XP-style window) -->
@@ -3115,6 +3292,11 @@
     posts: [], filtered: [], authors: [], stats: null,
     postById: new Map(), byConv: new Map(), convCount: new Map(),
     sort: 'desc', rendered: 0, query: '', handleFilter: null,
+    allMedia: [],        // flat list of every media item across all posts
+    galleryView: [],     // current filtered gallery (all/photo/video)
+    galleryFilter: 'all',
+    lbList: [],          // the sequence currently navigable in the lightbox
+    lbIndex: 0,
   };
 
   const $ = sel => document.querySelector(sel);
@@ -3318,6 +3500,58 @@
     document.body.style.overflow = 'hidden';
     setTimeout(() => $('#members-search-input').focus(), 50);
   }
+  /* ============================================================
+     Gallery
+     ============================================================ */
+  function renderGallery(){
+    const filter = state.galleryFilter;
+    const list = state.allMedia.filter(m => {
+      if(filter === 'all') return true;
+      const isVideo = m.type === 'video' || m.type === 'animated_gif' || (m.mime||'').startsWith('video/');
+      return filter === 'video' ? isVideo : !isVideo;
+    });
+    state.galleryView = list;
+    $('#gallery-count').textContent = fmt(list.length) + ' / ' + fmt(state.allMedia.length);
+    $('#gallery-status').textContent = `${fmt(list.length)} items`;
+    const grid = $('#gallery-grid');
+    // Render ~600 items max initially for snappier open; user can scroll
+    // through them. Could virtualize later if needed.
+    const toRender = list.slice(0, 600);
+    grid.innerHTML = toRender.map((m, i) => {
+      const isVideo = m.type === 'video' || m.type === 'animated_gif' || (m.mime||'').startsWith('video/');
+      const thumb = m.drive_id
+        ? (isVideo
+            ? `https://drive.google.com/thumbnail?id=${m.drive_id}&sz=w400`
+            : `https://lh3.googleusercontent.com/d/${m.drive_id}=w400`)
+        : (m.tweet_url || m.url || '');
+      return `<div class="g-item" data-idx="${i}" title="@${escapeHtml(m.author||'')}">
+        <img src="${escapeHtml(thumb)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentElement.classList.add('broken');this.remove();this.parentElement.textContent='unavailable'">
+        ${isVideo ? '<span class="g-badge"></span>' : ''}
+      </div>`;
+    }).join('');
+    if(list.length > toRender.length){
+      grid.insertAdjacentHTML('beforeend',
+        `<div class="g-item broken" style="grid-column: 1/-1; aspect-ratio: auto; padding: 16px; text-align:center">+ ${fmt(list.length - toRender.length)} more (scroll through older posts in the feed)</div>`);
+    }
+  }
+  function openGallery(){
+    renderGallery();
+    $('#gallery-modal').classList.add('open');
+    $('#gallery-modal').setAttribute('aria-hidden','false');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeGallery(){
+    $('#gallery-modal').classList.remove('open');
+    $('#gallery-modal').setAttribute('aria-hidden','true');
+    if(!$('#thread-modal').classList.contains('open') &&
+       !$('#members-modal').classList.contains('open') &&
+       !$('#about-modal').classList.contains('open') &&
+       !$('#lightbox').classList.contains('open') &&
+       !$('#video-lightbox').classList.contains('open')){
+      document.body.style.overflow = '';
+    }
+  }
+
   function openAbout(){
     const s = state.stats;
     if(s){
@@ -3401,16 +3635,58 @@
 
   function openVideoLightbox(driveId, xUrl){
     const v = $('#vlb-video');
-    // Cache-buster `?v=2` busts any previously-cached bad response from
-    // earlier deploys (when content-disposition was still "attachment").
+    // Cache-buster `?v=5` busts any previously-cached bad response
     v.src = '/v/' + encodeURIComponent(driveId) + '?v=5';
     const a = $('#vlb-open');
     if(xUrl){ a.href = xUrl; a.style.display = ''; } else { a.style.display = 'none'; }
     $('#video-lightbox').classList.add('open');
     $('#video-lightbox').setAttribute('aria-hidden','false');
     document.body.style.overflow = 'hidden';
-    // autoplay where permitted; fall back to user interaction otherwise
     v.play?.().catch(() => {});
+  }
+
+  /* =========================================================================
+     Lightbox navigation through a media sequence (gallery or post-media list)
+     ========================================================================= */
+  function setLbList(list, idx){
+    state.lbList = list || [];
+    state.lbIndex = Math.max(0, Math.min(idx|0, state.lbList.length - 1));
+    updateLbNavState();
+  }
+  function updateLbNavState(){
+    const multi = state.lbList.length > 1;
+    ['#lb-prev','#lb-next','#vlb-prev','#vlb-next'].forEach(sel => {
+      const b = $(sel); if(!b) return;
+      b.style.display = multi ? 'grid' : 'none';
+      const isPrev = sel.includes('prev');
+      const atEdge = isPrev ? state.lbIndex <= 0 : state.lbIndex >= state.lbList.length - 1;
+      b.disabled = atEdge;
+    });
+    const meta = `${state.lbIndex + 1} / ${state.lbList.length}`;
+    if($('#lb-meta')) $('#lb-meta').textContent = state.lbList.length > 1 ? meta : '';
+    if($('#vlb-meta')) $('#vlb-meta').textContent = state.lbList.length > 1 ? meta : '';
+  }
+  function showMediaAt(i){
+    if(i < 0 || i >= state.lbList.length) return;
+    state.lbIndex = i;
+    const m = state.lbList[i];
+    const isVideo = m.type === 'video' || m.type === 'animated_gif' || (m.mime||'').startsWith('video/');
+    const fallback = m.postUrl || (m.author && m.postId ? `https://x.com/${m.author}/status/${m.postId}` : '');
+    if(isVideo && m.drive_id){
+      if($('#lightbox').classList.contains('open')) closeLightbox();
+      openVideoLightbox(m.drive_id, fallback);
+    } else {
+      const full = m.drive_id
+        ? `https://lh3.googleusercontent.com/d/${m.drive_id}=w2400`
+        : (m.tweet_url || m.url);
+      if($('#video-lightbox').classList.contains('open')) closeVideoLightbox();
+      openLightbox(full, fallback);
+    }
+    updateLbNavState();
+  }
+  function nav(d){
+    const i = state.lbIndex + d;
+    if(i >= 0 && i < state.lbList.length) showMediaAt(i);
   }
   function closeVideoLightbox(){
     const v = $('#vlb-video');
@@ -3451,19 +3727,24 @@
 
     function onFeedClick(e){
       if(e.target.closest('a')) return;
-      // image click → open lightbox
-      const img = e.target.closest('.media-grid .m img');
-      if(img){
-        e.stopPropagation();
-        openLightbox(img.dataset.full || img.src, img.dataset.x);
-        return;
-      }
-      // video poster click → open video-lightbox (fits full video to viewport)
-      const vidPoster = e.target.closest('.media-grid .m.vid.poster');
-      if(vidPoster){
-        e.stopPropagation();
-        openVideoLightbox(vidPoster.dataset.drive, vidPoster.dataset.fallback);
-        return;
+      // media click → open the media at that index, with THAT post's media
+      // as the navigable sequence (so prev/next walks within the tweet).
+      const grid = e.target.closest('.media-grid');
+      if(grid){
+        const msg = e.target.closest('.msg');
+        const post = msg ? state.postById.get(msg.dataset.id) : null;
+        const children = [...grid.children];
+        const target = e.target.closest('.m');
+        const idx = target ? children.indexOf(target) : 0;
+        if(post && post.media && post.media.length){
+          const seq = post.media.map(m => ({
+            ...m, postId: post.id, author: post.author, postUrl: post.url,
+          }));
+          setLbList(seq, idx);
+          showMediaAt(idx);
+          e.stopPropagation();
+          return;
+        }
       }
       const chip = e.target.closest('.reply-chip');
       if(chip){ openThread(chip.dataset.open); return; }
@@ -3494,6 +3775,7 @@
       if(e.key === 'Escape'){
         if($('#video-lightbox').classList.contains('open')) closeVideoLightbox();
         else if($('#lightbox').classList.contains('open')) closeLightbox();
+        else if($('#gallery-modal').classList.contains('open')) closeGallery();
         else if($('#about-modal').classList.contains('open')) closeAbout();
         else if($('#members-modal').classList.contains('open')) closeMembers();
         else closeThread();
@@ -3508,6 +3790,45 @@
 
     // mobile-only members button
     $('#members-btn')?.addEventListener('click', openMembers);
+
+    // Gallery
+    $('#gallery-btn')?.addEventListener('click', openGallery);
+    $('#gallery-close')?.addEventListener('click', closeGallery);
+    $('#gallery-modal')?.addEventListener('click', e => {
+      if(e.target.id === 'gallery-modal') closeGallery();
+      if(e.target.closest('[data-close-gallery]')) closeGallery();
+      if(e.target.closest('[data-maximize-gallery]')){
+        document.querySelector('.gallery-card')?.classList.toggle('xp-maximized');
+      }
+      const f = e.target.closest('.g-filter');
+      if(f){
+        document.querySelectorAll('.g-filter').forEach(b => b.classList.remove('active'));
+        f.classList.add('active');
+        state.galleryFilter = f.dataset.gFilter;
+        renderGallery();
+        return;
+      }
+      const item = e.target.closest('.g-item:not(.broken)');
+      if(item && item.dataset.idx != null){
+        const idx = parseInt(item.dataset.idx, 10);
+        // Navigable sequence = the current gallery filter list
+        setLbList(state.galleryView, idx);
+        showMediaAt(idx);
+      }
+    });
+
+    // Lightbox nav buttons
+    $('#lb-prev').addEventListener('click', e => { e.stopPropagation(); nav(-1); });
+    $('#lb-next').addEventListener('click', e => { e.stopPropagation(); nav(+1); });
+    $('#vlb-prev').addEventListener('click', e => { e.stopPropagation(); nav(-1); });
+    $('#vlb-next').addEventListener('click', e => { e.stopPropagation(); nav(+1); });
+
+    // Keyboard arrows while a lightbox is open
+    document.addEventListener('keydown', e => {
+      if(!$('#lightbox').classList.contains('open') && !$('#video-lightbox').classList.contains('open')) return;
+      if(e.key === 'ArrowLeft'){ nav(-1); e.preventDefault(); }
+      else if(e.key === 'ArrowRight'){ nav(+1); e.preventDefault(); }
+    });
 
     // sidebar "Top Contributors" members
     $('#members-list').addEventListener('click', e => {
@@ -3572,6 +3893,20 @@
       state.byConv.forEach((arr, convId) => {
         if(arr.length > 1) state.convCount.set(convId, arr.length - 1);
       });
+      // Flat media index for gallery + lightbox navigation. Keep original
+      // post order (newest → oldest) so clicking into a post's media and
+      // pressing "next" walks the archive chronologically.
+      state.allMedia = posts.flatMap(p =>
+        (p.media||[]).map((m,i) => ({
+          ...m,
+          idx: i,
+          postId: p.id,
+          author: p.author,
+          postUrl: p.url,
+          ts: p.ts,
+          iso: p.iso,
+        }))
+      );
       renderStats();
       renderMembers();
       applyFilter();
