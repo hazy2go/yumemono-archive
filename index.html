@@ -1284,22 +1284,42 @@
      DUSK PASS — lofi late-evening tonality + legible outlined whites
      ========================================================================== */
 
-  /* soft pastel sky: rose → peach → pastel pink → lavender → dusty blue */
+  /* soft pastel sky: rose → peach → pastel pink → lavender → dusty blue
+     Move the gradient onto html so iOS Safari overscroll + rotation never
+     reveals white. Body is transparent on top. */
+  html{
+    min-height: 100%;
+    background:
+      radial-gradient(1000px 700px at 20% 10%, rgba(255,235,210,.55) 0%, rgba(255,235,210,0) 60%),
+      radial-gradient(1100px 800px at 85% 92%, rgba(200,220,255,.4) 0%, rgba(200,220,255,0) 65%),
+      linear-gradient(180deg,
+        #f7d4c8 0%,
+        #f3c8bf 10%,
+        #e8bccd 22%,
+        #cdb4d8 36%,
+        #a8b0d8 52%,
+        #8599c8 68%,
+        #5e7db0 84%,
+        #3e578f 100%
+      ) fixed no-repeat !important;
+    background-color: #3e578f !important;
+  }
   body{
+    background: transparent !important;
+    overscroll-behavior-y: none;
+  }
+  /* Viewport-locked gradient layer — always behind content, always covers
+     the whole visible area. Prevents white bands on iOS rubber-band scroll
+     and on orientation change. */
+  .bg-layer{
+    position: fixed; inset: 0; z-index: -1; pointer-events: none;
     background:
       repeating-linear-gradient(0deg, rgba(255,255,255,.04) 0 2px, transparent 2px 4px),
       radial-gradient(1000px 700px at 20% 10%, rgba(255,235,210,.55) 0%, rgba(255,235,210,0) 60%),
       radial-gradient(1100px 800px at 85% 92%, rgba(200,220,255,.4) 0%, rgba(200,220,255,0) 65%),
       linear-gradient(180deg,
-        #f7d4c8 0%,      /* blush rose */
-        #f3c8bf 10%,     /* creamy coral */
-        #e8bccd 22%,     /* pastel pink-lilac */
-        #cdb4d8 36%,     /* soft lavender */
-        #a8b0d8 52%,     /* periwinkle */
-        #8599c8 68%,     /* dusty blue */
-        #5e7db0 84%,     /* cooler pastel blue */
-        #3e578f 100%     /* deep pastel navy */
-      ) !important;
+        #f7d4c8 0%, #f3c8bf 10%, #e8bccd 22%, #cdb4d8 36%,
+        #a8b0d8 52%, #8599c8 68%, #5e7db0 84%, #3e578f 100%);
   }
 
   /* lighter vignette + gentler scanlines so the pastel reads airy */
@@ -2206,9 +2226,65 @@
     .xp-btn{ width: 28px; height: 24px }
   }
 
+  /* ==========================================================================
+     MOBILE FINAL POLISH — (1) sidebar gone, (2) modal always closable,
+     (3) background never shows white, (4) lighter atmosphere.
+     ========================================================================== */
+  @media (max-width: 720px){
+    /* the desktop members sidebar is hidden; the mobile button in the header
+       is the entry point to the members modal */
+    .main > .members{ display: none !important }
+    .main{ grid-template-columns: 1fr !important }
+
+    /* XP modal backdrop: allow vertical scroll, put window at top so the ×
+       in the titlebar is always reachable even when content overflows */
+    .thread-modal{
+      align-items: flex-start !important;
+      overflow-y: auto !important;
+      padding: 10px !important;
+      -webkit-overflow-scrolling: touch;
+    }
+    .xp-window{
+      width: 100% !important;
+      max-height: calc(100dvh - 20px) !important;
+    }
+    /* Bigger × button on mobile for reliable thumb-tap */
+    .xp-btn{
+      width: 44px !important; height: 34px !important;
+      font-size: 18px !important;
+    }
+    .xp-btn.xp-close{ font-size: 22px !important }
+    .xp-titlebar{ height: 42px !important; padding: 4px 6px !important }
+    .xp-title{ font-size: 16px !important; gap: 8px !important }
+
+    /* Thread modal close button likewise bigger on mobile */
+    .thread-card .close{
+      width: 48px !important; height: 40px !important; font-size: 26px !important;
+      top: 10px !important; right: 10px !important;
+    }
+    .thread-card{ width: 100% !important; padding: 12px 14px !important }
+    .thread-card h3{ padding-right: 60px !important }
+
+    /* Halve fish count + size is handled in JS (see below). But make sure
+       the atmosphere layers don't bleed past the fixed viewport edge. */
+    .fish-layer, .bubbles, #sakura-layer, .sky{
+      height: 100dvh !important;
+    }
+  }
+
+  /* keep gradient covering in landscape too (tall-phone → short-landscape flip) */
+  @media (orientation: landscape) and (max-width: 900px){
+    .bg-layer, html{
+      background-attachment: scroll !important;
+    }
+  }
+
 </style>
 </head>
 <body>
+
+<!-- viewport-locked gradient so scroll/rotate never shows white -->
+<div class="bg-layer" aria-hidden="true"></div>
 
 <!-- atmosphere (fixed, full viewport) -->
 <div class="sky">
@@ -2920,7 +2996,13 @@
     return frames;
   }
 
-  for(let i=0;i<8;i++){
+  // Mobile gets half the fish at half the size — lighter visual load + perf.
+  const isMobile    = window.matchMedia('(max-width: 720px)').matches;
+  const fishCount   = isMobile ? 4 : 8;
+  const scaleBase   = isMobile ? .35 : .65;
+  const scaleRange  = isMobile ? .35 : .70;
+
+  for(let i=0;i<fishCount;i++){
     const f = document.createElement('div');
     const reversed = Math.random() < .5;
     f.className = 'fish' + (reversed ? ' rev' : '');
@@ -2929,7 +3011,7 @@
     f.style.opacity = (.78 + Math.random()*.18).toFixed(2);
     f.style.animation = 'none';  // disable the old CSS swim
 
-    const scale = .65 + Math.random()*.7;
+    const scale = scaleBase + Math.random() * scaleRange;
     const svg = f.querySelector('svg');
     if(svg){
       svg.style.transform = `scale(${scale.toFixed(2)})`;
@@ -2938,7 +3020,6 @@
 
     fishLayer.appendChild(f);
 
-    // Drive motion through the Web Animations API so each fish is unique.
     const duration = (28 + Math.random()*24) * 1000;
     const delay    = -Math.random() * duration;
     f.animate(buildSwimKeyframes(reversed), {
@@ -3391,6 +3472,9 @@
       e.preventDefault();
       window.location.href = window.location.pathname;
     });
+
+    // mobile-only members button
+    $('#members-btn')?.addEventListener('click', openMembers);
 
     // sidebar "Top Contributors" members
     $('#members-list').addEventListener('click', e => {
