@@ -276,13 +276,23 @@ def build(
             post_dict["seed"] = True
         if has_quote_cols and r["is_quote_post"] and r["quoted_post_x_id"]:
             qa = authors.get(r["quoted_author_id"]) if r["quoted_author_id"] else None
+            q_body = expand_tco_links(r["quoted_body_text"] or "", tco_map)
+            q_media = media_by_post.get(r["quoted_post_x_id"], [])
+            # Strip trailing media t.co links from the quoted body so we don't
+            # show the same shortlink twice (once as text, once as attachment).
+            if q_media and r["quoted_body_text"]:
+                q_body = expand_tco_links(
+                    strip_trailing_tco(r["quoted_body_text"], len(q_media)),
+                    tco_map,
+                )
             post_dict["quote"] = {
                 "id": r["quoted_post_x_id"],
                 "url": r["quoted_canonical_url"],
-                "body": expand_tco_links(r["quoted_body_text"] or "", tco_map),
+                "body": q_body,
                 "author": qa["handle"] if qa else None,
                 "author_name": qa["name"] if qa else None,
                 "author_avatar": qa["avatar"] if qa else None,
+                "media": q_media,  # may be empty for non-captured quotes
             }
         posts.append(post_dict)
 

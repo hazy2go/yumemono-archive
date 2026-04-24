@@ -2379,32 +2379,74 @@
     text-shadow: 1px 1px 0 #0a0f22;
     letter-spacing: .3px;
   }
-  .quote-card .q-body{
+  .quote-card .q-body,
+  .quote-card .q-body *:not(a){
     font-family: 'M PLUS Rounded 1c', system-ui, sans-serif;
     font-size: 13.5px; font-weight: 500; line-height: 1.55;
-    color: #f4e7d3;
-    text-shadow: 1px 1px 0 #0a0f22;
+    color: #fff6e6 !important;
+    text-shadow:
+      -1px -1px 0 #0a0f22, 1px -1px 0 #0a0f22,
+      -1px  1px 0 #0a0f22, 1px  1px 0 #0a0f22 !important;
     overflow-wrap: anywhere; word-break: break-word;
-    padding-left: 2px;
   }
   .quote-card .q-body a{
     color: #ffd98a !important;
-    text-decoration: underline rgba(255,217,138,.45);
+    text-decoration: underline rgba(255,217,138,.5) !important;
     text-underline-offset: 2px;
+    text-shadow:
+      -1px -1px 0 #0a0f22, 1px -1px 0 #0a0f22,
+      -1px  1px 0 #0a0f22, 1px  1px 0 #0a0f22 !important;
   }
-  .quote-card .q-body a:hover{ text-decoration-color: #ffd98a }
+  .quote-card .q-body a:hover{ text-decoration-color: #ffd98a !important }
   .quote-card .q-footer{
     display: flex; align-items: center; gap: 6px;
     margin-top: 8px; padding-top: 6px;
-    border-top: 1px dashed rgba(255,240,230,.2);
-    font-family: 'VT323', monospace; font-size: 12px; color: #c8b8e0;
+    border-top: 1px dashed rgba(255,240,230,.25);
+    font-family: 'VT323', monospace; font-size: 12px;
+    color: #fff6e6;
     letter-spacing: 1px;
-    text-shadow: 1px 1px 0 #0a0f22;
+    text-shadow:
+      -1px -1px 0 #0a0f22, 1px -1px 0 #0a0f22,
+      -1px  1px 0 #0a0f22, 1px  1px 0 #0a0f22;
   }
   .quote-card .q-footer .q-arrow{
     margin-left: auto; color: #ffd98a;
     font-family: 'VT323', monospace; font-size: 13px;
-    text-shadow: 1px 1px 0 #0a0f22;
+    text-shadow:
+      -1px -1px 0 #0a0f22, 1px -1px 0 #0a0f22,
+      -1px  1px 0 #0a0f22, 1px  1px 0 #0a0f22;
+  }
+
+  /* Media grid inside a quote — compact */
+  .quote-card .q-media{
+    margin-top: 8px; display: grid; gap: 4px;
+    border: 2px solid #0a0f22; border-radius: 8px; overflow: hidden;
+    box-shadow: 2px 2px 0 #0a0f22;
+    background: #0b2e5c;
+  }
+  .quote-card .q-media.n1{ grid-template-columns: 1fr; height: 200px }
+  .quote-card .q-media.n2{ grid-template-columns: 1fr 1fr; height: 140px }
+  .quote-card .q-media.n3{ grid-template-columns: 2fr 1fr; grid-template-rows: 1fr 1fr; height: 180px }
+  .quote-card .q-media.n3 > :first-child{ grid-row: span 2 }
+  .quote-card .q-media.n4{ grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; height: 200px }
+  .quote-card .q-media .m{ position: relative; min-width: 0; min-height: 0; overflow: hidden; background: #0b2e5c }
+  .quote-card .q-media .m img{ width: 100%; height: 100%; object-fit: cover; display: block }
+  .quote-card .q-media .m.vid{
+    display: grid; place-items: center; cursor: pointer;
+    background: linear-gradient(180deg, #1a4a88, #0b2e5c);
+  }
+  .quote-card .q-media .m.vid .play{
+    width: 40px; height: 40px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 25%, #fff 0 16%, rgba(255,255,255,.25) 32%, transparent 55%),
+      linear-gradient(180deg, #7fd4ff, #2aa1ee 55%, #0b6bbd);
+    border: 2px solid #0a0f22;
+    box-shadow: 2px 2px 0 #0a0f22, inset 0 2px 0 rgba(255,255,255,.8);
+    display: grid; place-items: center; position: relative;
+  }
+  .quote-card .q-media .m.vid .play::after{
+    content: ""; width: 0; height: 0; margin-left: 3px;
+    border-left: 12px solid #fff;
+    border-top: 7px solid transparent; border-bottom: 7px solid transparent;
   }
 
   /* Archived-quote variant — signals the quoted post lives in THIS archive,
@@ -3587,11 +3629,31 @@
       </div>`;
     const bodyHtml = `<div class="q-body">${body ? linkify(body) : '<em style="opacity:.6">(quoted tweet)</em>'}</div>`;
 
+    // Media attached to the quoted tweet (archived via pipeline)
+    let qMediaHtml = '';
+    const media = (q.media && q.media.length)
+      ? q.media
+      : (inArchive ? (state.postById.get(q.id)?.media || []) : []);
+    if(media.length){
+      const n = Math.min(media.length, 4);
+      qMediaHtml = '<div class="q-media n' + n + '">' + media.slice(0,4).map(m => {
+        const isVid = m.type === 'video' || m.type === 'animated_gif' || (m.mime||'').startsWith('video/');
+        if(isVid){
+          return `<div class="m vid"><span class="play"></span></div>`;
+        }
+        const thumb = m.drive_id
+          ? `https://lh3.googleusercontent.com/d/${m.drive_id}=w600`
+          : (m.tweet_url || m.url || '');
+        return `<div class="m"><img src="${escapeHtml(thumb)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentElement.style.display='none'"></div>`;
+      }).join('') + '</div>';
+    }
+
     if(inArchive){
       return `
         <div class="quote-card quote-local" data-open-post="${escapeHtml(q.id)}" role="button" tabindex="0">
           ${head}
           ${bodyHtml}
+          ${qMediaHtml}
           <div class="q-footer">
             <span>in archive ◆</span>
             <span class="q-arrow">open thread →</span>
@@ -3603,6 +3665,7 @@
       <a class="quote-card" href="${escapeHtml(qUrl)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">
         ${head}
         ${bodyHtml}
+        ${qMediaHtml}
         <div class="q-footer">
           <span>quoted post</span>
           <span class="q-arrow">open on X ↗</span>
