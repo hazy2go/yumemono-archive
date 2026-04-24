@@ -2479,15 +2479,37 @@
   .quote-card.quote-local::after{ content: "❝" }
   .quote-card.quote-local:focus-visible{ outline: 2px solid #ffd98a; outline-offset: 2px }
 
-  /* Clickable @handle in the post header — filters feed by author */
-  .handle-click{ cursor: pointer; user-select: none; transition: .1s }
-  .handle-click:hover{
-    color: #ffd98a !important;
+  /* Clickable @handle chip in the post header — filters feed by author */
+  .handle-click{
+    display: inline-flex; align-items: center;
+    padding: 1px 9px; border-radius: 10px;
+    font-family: 'VT323', monospace !important;
+    font-size: 13px !important; line-height: 1.35;
+    letter-spacing: .4px;
+    color: #fff6e6 !important;
+    background: linear-gradient(180deg, rgba(100,88,150,.6), rgba(50,42,95,.75));
+    border: 1.5px solid #0a0f22;
+    box-shadow: 2px 2px 0 #0a0f22, inset 0 1px 0 rgba(255,255,255,.3);
     text-shadow:
       -1px -1px 0 #0a0f22, 1px -1px 0 #0a0f22,
       -1px  1px 0 #0a0f22, 1px  1px 0 #0a0f22 !important;
+    cursor: pointer; user-select: none; transition: .1s;
+    white-space: nowrap;
+    position: relative;
+    top: -1px;
   }
-  .handle-click:focus-visible{ outline: 2px solid #ffd98a; outline-offset: 2px; border-radius: 3px }
+  .handle-click:hover{
+    background: linear-gradient(180deg, #ffe8a6, #ffcf4e);
+    color: #1a1730 !important;
+    text-shadow: 1px 1px 0 rgba(255,255,255,.5) !important;
+    transform: translate(-1px,-1px);
+    box-shadow: 3px 3px 0 #0a0f22, inset 0 1px 0 rgba(255,255,255,.6);
+  }
+  .handle-click:active{
+    transform: translate(1px,1px);
+    box-shadow: 1px 1px 0 #0a0f22, inset 0 1px 0 rgba(0,0,0,.2);
+  }
+  .handle-click:focus-visible{ outline: 2px solid #ffd98a; outline-offset: 2px }
 
   /* Archived-link inline badge — subtle gold pill to signal "lives in this archive" */
   .a-internal{ cursor: pointer }
