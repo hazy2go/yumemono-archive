@@ -2479,6 +2479,16 @@
   .quote-card.quote-local::after{ content: "❝" }
   .quote-card.quote-local:focus-visible{ outline: 2px solid #ffd98a; outline-offset: 2px }
 
+  /* Clickable @handle in the post header — filters feed by author */
+  .handle-click{ cursor: pointer; user-select: none; transition: .1s }
+  .handle-click:hover{
+    color: #ffd98a !important;
+    text-shadow:
+      -1px -1px 0 #0a0f22, 1px -1px 0 #0a0f22,
+      -1px  1px 0 #0a0f22, 1px  1px 0 #0a0f22 !important;
+  }
+  .handle-click:focus-visible{ outline: 2px solid #ffd98a; outline-offset: 2px; border-radius: 3px }
+
   /* Archived-link inline badge — subtle gold pill to signal "lives in this archive" */
   .a-internal{ cursor: pointer }
   .a-internal .a-badge{
@@ -3810,7 +3820,7 @@
         <div>
           <div class="row">
             <span class="name">${escapeHtml(display)}</span>
-            ${handle ? `<span class="handle">${escapeHtml(handle)}</span>` : ''}
+            ${handle && p.author ? `<span class="handle handle-click" data-filter-handle="${escapeHtml(p.author)}" role="button" tabindex="0" title="Show posts by ${escapeHtml(handle)}">${escapeHtml(handle)}</span>` : (handle ? `<span class="handle">${escapeHtml(handle)}</span>` : '')}
             <span class="dt">·</span>
             ${formatDate(p.iso)}
             ${kindBadge(p.kind)}
@@ -4209,8 +4219,8 @@
     });
 
     function onFeedClick(e){
-      // archived x.com link or @mention inline in body → route internally
-      const internalLink = e.target.closest('a[data-open-post], a[data-filter-handle]');
+      // Any element with data-open-post or data-filter-handle routes locally
+      const internalLink = e.target.closest('[data-open-post], [data-filter-handle]');
       if(internalLink){
         e.preventDefault();
         e.stopPropagation();
@@ -4290,11 +4300,15 @@
     // mobile-only members button
     $('#members-btn')?.addEventListener('click', openMembers);
 
-    // Enter / Space on an archived quote card (keyboard access)
+    // Enter / Space on an archived quote card or clickable @handle
     document.addEventListener('keydown', e => {
       if(e.key !== 'Enter' && e.key !== ' ') return;
-      const q = document.activeElement?.closest?.('.quote-card.quote-local[data-open-post]');
-      if(q){ e.preventDefault(); openThread(q.dataset.openPost); }
+      const el = document.activeElement;
+      if(!el) return;
+      const q = el.closest?.('.quote-card.quote-local[data-open-post]');
+      if(q){ e.preventDefault(); openThread(q.dataset.openPost); return; }
+      const h = el.closest?.('[data-filter-handle]');
+      if(h){ e.preventDefault(); filterByHandle(h.dataset.filterHandle); }
     });
 
     // Gallery
