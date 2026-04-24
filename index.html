@@ -2479,6 +2479,21 @@
   .quote-card.quote-local::after{ content: "❝" }
   .quote-card.quote-local:focus-visible{ outline: 2px solid #ffd98a; outline-offset: 2px }
 
+  /* Archived-link inline badge — subtle gold pill to signal "lives in this archive" */
+  .a-internal{ cursor: pointer }
+  .a-internal .a-badge{
+    display: inline-block; margin-left: 2px;
+    padding: 0 4px; border-radius: 3px;
+    font-family: 'VT323', monospace; font-size: 11px; line-height: 1.2;
+    background: linear-gradient(180deg,#ffe8a6,#ffcf4e);
+    color: #1a1730;
+    border: 1px solid #0a0f22;
+    box-shadow: 1px 1px 0 rgba(10,15,34,.6);
+    text-shadow: none;
+    vertical-align: baseline;
+    transform: translateY(-1px);
+  }
+
   /* ===== Lightbox download button (pixel arrow into tray) ===== */
   .lb-download{
     position: absolute; top: 16px; right: 74px; z-index: 11;
@@ -3648,10 +3663,33 @@
     return `<span class="date">${date}</span><span class="dt">·</span><span class="date">${time}</span>`;
   }
 
+  // Set of lowercase handles we have in the archive, built once from authors
+  let _archiveHandles = null;
+  function archiveHandles(){
+    if(_archiveHandles) return _archiveHandles;
+    _archiveHandles = new Set(state.authors.map(a => (a.handle||'').toLowerCase()));
+    return _archiveHandles;
+  }
+
   function linkify(text){
     let t = escapeHtml(text);
-    t = t.replace(/\bhttps?:\/\/[^\s<]+/g, url => `<a href="${url}" target="_blank" rel="noopener">${url.length>60?url.slice(0,60)+'…':url}</a>`);
-    t = t.replace(/(^|\s)@([A-Za-z0-9_]{1,20})/g, (_, sp, h) => `${sp}<a href="https://x.com/${h}" target="_blank" rel="noopener">@${h}</a>`);
+    const handles = archiveHandles();
+    // URLs — rewrite archived x.com/{user}/status/{id} links to internal routes
+    t = t.replace(/\bhttps?:\/\/[^\s<]+/g, url => {
+      const m = url.match(/^https?:\/\/(?:www\.)?(?:x\.com|twitter\.com)\/([A-Za-z0-9_]+)\/status\/(\d+)/i);
+      if(m && state.postById && state.postById.has(m[2])){
+        // Archived post — open the thread locally
+        return `<a href="#${m[2]}" data-open-post="${m[2]}" class="a-internal" title="Open thread in archive">${url.length>60?url.slice(0,60)+'…':url} <span class="a-badge">◆</span></a>`;
+      }
+      return `<a href="${url}" target="_blank" rel="noopener">${url.length>60?url.slice(0,60)+'…':url}</a>`;
+    });
+    // @mentions — route to local filter if the handle is in the archive
+    t = t.replace(/(^|\s)@([A-Za-z0-9_]{1,20})/g, (_, sp, h) => {
+      if(handles.has(h.toLowerCase())){
+        return `${sp}<a href="#@${h}" data-filter-handle="${h}" class="a-internal" title="Show posts by @${h}">@${h}</a>`;
+      }
+      return `${sp}<a href="https://x.com/${h}" target="_blank" rel="noopener">@${h}</a>`;
+    });
     return t.replace(/\n/g,'<br>');
   }
 
@@ -4171,6 +4209,15 @@
     });
 
     function onFeedClick(e){
+      // archived x.com link or @mention inline in body → route internally
+      const internalLink = e.target.closest('a[data-open-post], a[data-filter-handle]');
+      if(internalLink){
+        e.preventDefault();
+        e.stopPropagation();
+        if(internalLink.dataset.openPost) openThread(internalLink.dataset.openPost);
+        else if(internalLink.dataset.filterHandle) filterByHandle(internalLink.dataset.filterHandle);
+        return;
+      }
       // archived quote-card → open the quoted post's thread inside the archive
       const qLocal = e.target.closest('.quote-card.quote-local[data-open-post]');
       if(qLocal){
