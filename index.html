@@ -3985,18 +3985,27 @@
      Gallery
      ============================================================ */
   function buildPFPList(){
-    // Build once: every author with an avatar becomes a gallery-eligible PFP
+    // Build once: every author with an avatar becomes a gallery-eligible PFP.
+    // Type 'photo' so the lightbox + download pipeline treat it like an image.
     return state.authors
       .filter(a => a.avatar)
-      .map(a => ({
-        kind: 'pfp',
-        type: 'pfp',
-        url: a.avatar,
-        thumb: a.avatar,
-        author: a.handle,
-        name: a.name,
-        posts: a.posts,
-      }));
+      .map(a => {
+        // Request a larger size from Drive's CDN when the avatar is Drive-hosted
+        const full = (a.avatar || '').replace(/=w\d+$/, '=w1200');
+        const ext = /\.png(\?|$)/i.test(full) ? 'png' : 'jpg';
+        return {
+          kind: 'pfp',
+          type: 'photo',
+          url: full,         // full-size variant for the lightbox
+          thumb: a.avatar,   // original (smaller) for the gallery grid
+          tweet_url: full,
+          author: a.handle,
+          name: a.name,
+          posts: a.posts,
+          key: `${a.handle || a.id || 'unknown'}-pfp`,
+          ext,
+        };
+      });
   }
 
   function renderGallery(){
@@ -4177,9 +4186,15 @@
       const atEdge = isPrev ? state.lbIndex <= 0 : state.lbIndex >= state.lbList.length - 1;
       b.disabled = atEdge;
     });
-    const meta = `${state.lbIndex + 1} / ${state.lbList.length}`;
-    if($('#lb-meta')) $('#lb-meta').textContent = state.lbList.length > 1 ? meta : '';
-    if($('#vlb-meta')) $('#vlb-meta').textContent = state.lbList.length > 1 ? meta : '';
+    const cur = state.lbList[state.lbIndex];
+    const pos = `${state.lbIndex + 1} / ${state.lbList.length}`;
+    // Prepend "@handle · pfp" label for profile pictures so the viewer knows
+    const prefix = (cur && cur.kind === 'pfp' && cur.author)
+      ? `@${cur.author} · pfp${state.lbList.length > 1 ? ' · ' : ''}`
+      : '';
+    const label = prefix + (state.lbList.length > 1 ? pos : '');
+    if($('#lb-meta')) $('#lb-meta').textContent = label;
+    if($('#vlb-meta')) $('#vlb-meta').textContent = label;
   }
   function showMediaAt(i){
     if(i < 0 || i >= state.lbList.length) return;
@@ -4193,9 +4208,10 @@
     } else {
       const full = m.drive_id
         ? `https://lh3.googleusercontent.com/d/${m.drive_id}=w2400`
-        : (m.tweet_url || m.url);
+        : (m.url || m.tweet_url);
       if($('#video-lightbox').classList.contains('open')) closeVideoLightbox();
-      openLightbox(full, fallback);
+      // For PFPs there's no tweet to "open original" on — hide the footer link
+      openLightbox(full, m.kind === 'pfp' ? null : fallback);
     }
     updateLbNavState();
   }
@@ -4208,8 +4224,12 @@
     const m = state.lbList[state.lbIndex];
     if(!m) return;
     const isVideo = m.type === 'video' || m.type === 'animated_gif' || (m.mime||'').startsWith('video/');
-    // Prefer the same-origin proxy (covers both media + videos, CORS OK)
-    const src = m.drive_id ? `/v/${encodeURIComponent(m.drive_id)}?v=5` : m.url;
+    // Prefer the same-origin proxy for Drive items; fall back to direct URL
+    // (covers PFPs which have no drive_id — the URL is either local /avatars/
+    // or lh3.googleusercontent.com, both of which are fetchable directly).
+    const src = m.drive_id
+      ? `/v/${encodeURIComponent(m.drive_id)}?v=5`
+      : (m.url || m.tweet_url);
     if(!src) return;
     const ext = m.ext || (isVideo ? 'mp4' : 'jpg');
     const filename = (m.key || ('yumemono-' + Date.now())) + '.' + ext;
@@ -4388,17 +4408,10 @@
       if(item && item.dataset.idx != null){
         const idx = parseInt(item.dataset.idx, 10);
         const m = state.galleryView[idx];
-        if(m && m.kind === 'pfp' && m.author){
-          // PFP click → filter the feed by that author
-          filterByHandle(m.author);
-          closeGallery();
-          return;
-        }
-        // Navigable sequence = only the photos/videos in the current filter
-        const mediaList = state.galleryView.filter(x => x.kind !== 'pfp');
-        const mediaIdx = mediaList.indexOf(m);
-        setLbList(mediaList, Math.max(0, mediaIdx));
-        showMediaAt(Math.max(0, mediaIdx));
+        // PFPs are now navigable just like photos — open in the image lightbox
+        // (handle chip in posts still provides filter-by-author elsewhere)
+        setLbList(state.galleryView, idx);
+        showMediaAt(idx);
       }
     });
 
