@@ -2679,6 +2679,32 @@
     font-family: 'VT323', monospace; font-size: 11px; color: #bfd8ff;
     letter-spacing: 1.4px;
   }
+  /* Video tile whose Drive thumbnail 404'd — stays clickable, shows a
+     dark filler with a big centered play badge so the user knows it's a video */
+  .g-item.g-vid.no-thumb{
+    display: grid; place-items: center;
+    background: linear-gradient(180deg, #1a4a88 0%, #0b2e5c 100%);
+  }
+  .g-item.g-vid.no-thumb::before{
+    content: "video"; position: absolute; bottom: 6px; left: 0; right: 0;
+    text-align: center; z-index: 1;
+    font-family: 'VT323', monospace; font-size: 11px; letter-spacing: 1.4px;
+    color: #bfd8ff;
+    text-shadow: 1px 1px 0 #0a0f22;
+  }
+  .g-item.g-vid.no-thumb .g-badge{
+    position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%);
+    width: 40px !important; height: 40px !important;
+    background: rgba(10,15,34,.8) !important;
+    border: 2px solid #0a0f22 !important;
+    box-shadow: 2px 2px 0 #0a0f22;
+  }
+  .g-item.g-vid.no-thumb .g-badge::after{
+    border-left-width: 14px !important;
+    border-top-width: 9px !important;
+    border-bottom-width: 9px !important;
+    margin-left: 3px;
+  }
   /* PFP tile: amber accent ring + handle ribbon so it reads as a member card */
   .g-item.g-pfp{
     border-color: #0a0f22;
@@ -4005,9 +4031,17 @@
             ? `https://drive.google.com/thumbnail?id=${m.drive_id}&sz=w400`
             : `https://lh3.googleusercontent.com/d/${m.drive_id}=w400`)
         : (m.tweet_url || m.url || '');
+      if(isVideo){
+        // For videos, a missing thumbnail must NOT disable the tile — the
+        // video itself still plays through /v/. Hide the broken img + mark
+        // no-thumb so the CSS draws a dark placeholder with just the play badge.
+        return `<div class="g-item g-vid" data-idx="${i}" title="@${escapeHtml(m.author||'')}">
+          <img src="${escapeHtml(thumb)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display='none';this.parentElement.classList.add('no-thumb')">
+          <span class="g-badge"></span>
+        </div>`;
+      }
       return `<div class="g-item" data-idx="${i}" title="@${escapeHtml(m.author||'')}">
         <img src="${escapeHtml(thumb)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentElement.classList.add('broken');this.remove();this.parentElement.textContent='unavailable'">
-        ${isVideo ? '<span class="g-badge"></span>' : ''}
       </div>`;
     }).join('');
     if(everything.length > toRender.length){
