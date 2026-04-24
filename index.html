@@ -1910,12 +1910,10 @@
     border-bottom: 1px dashed rgba(255,240,230,.25);
   }
   .about-mark{
-    width: 64px; height: 64px; border-radius: 6px;
+    width: 72px; height: 72px; border-radius: 50%;
     border: 2px solid #0a0f22; image-rendering: pixelated;
-    background:
-      radial-gradient(circle at 50% 55%, #fff0c0 0 22%, #f2a63a 22% 42%, #b85226 42% 60%, transparent 61%),
-      conic-gradient(from 0deg, #b85226 0deg 30deg, transparent 30deg 60deg, #b85226 60deg 90deg, transparent 90deg 120deg, #b85226 120deg 150deg, transparent 150deg 180deg, #b85226 180deg 210deg, transparent 210deg 240deg, #b85226 240deg 270deg, transparent 270deg 300deg, #b85226 300deg 330deg, transparent 330deg 360deg);
-    box-shadow: 3px 3px 0 #0a0f22, inset 0 2px 0 rgba(255,240,220,.7), 0 0 14px rgba(242,166,58,.5);
+    background: url('/yume-mark.png') center / cover no-repeat, #fff;
+    box-shadow: 3px 3px 0 #0a0f22, 0 0 14px rgba(242,166,58,.35);
   }
   .about-head{
     margin: 0; font-family: 'DotGothic16', monospace;
@@ -2480,6 +2478,54 @@
   }
   .quote-card.quote-local::after{ content: "❝" }
   .quote-card.quote-local:focus-visible{ outline: 2px solid #ffd98a; outline-offset: 2px }
+
+  /* ===== Lightbox download button (pixel arrow into tray) ===== */
+  .lb-download{
+    position: absolute; top: 16px; right: 74px; z-index: 11;
+    width: 44px; height: 38px; border-radius: 4px; padding: 0;
+    display: grid; place-items: center; cursor: pointer;
+    color: #0a0f22;
+    background: linear-gradient(180deg, #d4f2fb 0%, #7fd4ff 45%, #2aa1ee 100%);
+    border: 2px solid #0a0f22;
+    box-shadow:
+      3px 3px 0 #0a0f22,
+      inset 0 2px 0 rgba(255,255,255,.85),
+      inset 0 -2px 0 rgba(0,0,0,.3);
+    transition: .1s;
+  }
+  .lb-download:hover{
+    background: linear-gradient(180deg, #e8faff 0%, #9fe0ff 45%, #3ab6f5 100%);
+    transform: translate(-1px,-1px);
+    box-shadow: 4px 4px 0 #0a0f22, inset 0 2px 0 rgba(255,255,255,.9);
+  }
+  .lb-download:active{
+    transform: translate(1px,1px);
+    box-shadow: 1px 1px 0 #0a0f22, inset 0 2px 0 rgba(0,0,0,.2);
+  }
+  .lb-download svg{ filter: drop-shadow(0 1px 0 rgba(255,255,255,.4)) }
+  .lb-download.dl-busy{
+    opacity: .6;
+    pointer-events: none;
+    background: linear-gradient(180deg, #9bc0d0, #5b87a0 55%, #2f4d62);
+  }
+  .lb-download.dl-busy::after{
+    content: "..."; position: absolute; inset: 0;
+    display: grid; place-items: center;
+    font-family: 'VT323', monospace; font-size: 20px; color: #fff6e6;
+    text-shadow: 1px 1px 0 #0a0f22;
+  }
+  .lb-download.dl-busy svg{ display: none }
+
+  @media (max-width: 720px){
+    .lb-download{ width: 44px; height: 36px; right: 64px; top: 12px }
+  }
+
+  /* Search input placeholder → beige (was grey, hard to read) */
+  .search input{ color: #fff6e6 !important }
+  .search input::placeholder{
+    color: #e8c4a8 !important;
+    opacity: .85;
+  }
 
   /* ===== Lightbox navigation arrows (pixel) + meta strip ===== */
   .lb-nav{
@@ -3097,6 +3143,17 @@
 
 <!-- Image lightbox -->
 <div class="lightbox" id="lightbox" aria-hidden="true">
+  <button class="lb-download" id="lb-download" type="button" aria-label="Download">
+    <svg viewBox="0 0 10 10" shape-rendering="crispEdges" width="22" height="22" aria-hidden="true">
+      <g fill="currentColor">
+        <rect x="4" y="0" width="2" height="4"/>
+        <rect x="2" y="4" width="6" height="1"/>
+        <rect x="3" y="5" width="4" height="1"/>
+        <rect x="4" y="6" width="2" height="1"/>
+        <rect x="1" y="8" width="8" height="2"/>
+      </g>
+    </svg>
+  </button>
   <span class="lb-close" id="lb-close" aria-label="Close">×</span>
   <button class="lb-nav lb-prev" id="lb-prev" aria-label="Previous">
     <svg viewBox="0 0 10 14" shape-rendering="crispEdges" width="28" height="38"><g fill="currentColor"><rect x="7" y="2" width="2" height="1"/><rect x="5" y="3" width="2" height="1"/><rect x="3" y="4" width="2" height="1"/><rect x="1" y="5" width="2" height="2"/><rect x="3" y="7" width="2" height="1"/><rect x="5" y="8" width="2" height="1"/><rect x="7" y="9" width="2" height="1"/><rect x="1" y="7" width="2" height="2"/></g></svg>
@@ -3111,6 +3168,17 @@
 
 <!-- Video lightbox (fit-to-viewport with native fullscreen button) -->
 <div class="lightbox video-lightbox" id="video-lightbox" aria-hidden="true">
+  <button class="lb-download" id="vlb-download" type="button" aria-label="Download">
+    <svg viewBox="0 0 10 10" shape-rendering="crispEdges" width="22" height="22" aria-hidden="true">
+      <g fill="currentColor">
+        <rect x="4" y="0" width="2" height="4"/>
+        <rect x="2" y="4" width="6" height="1"/>
+        <rect x="3" y="5" width="4" height="1"/>
+        <rect x="4" y="6" width="2" height="1"/>
+        <rect x="1" y="8" width="8" height="2"/>
+      </g>
+    </svg>
+  </button>
   <span class="lb-close" id="vlb-close" aria-label="Close">×</span>
   <button class="lb-nav lb-prev" id="vlb-prev" aria-label="Previous">
     <svg viewBox="0 0 10 14" shape-rendering="crispEdges" width="28" height="38"><g fill="currentColor"><rect x="7" y="2" width="2" height="1"/><rect x="5" y="3" width="2" height="1"/><rect x="3" y="4" width="2" height="1"/><rect x="1" y="5" width="2" height="2"/><rect x="3" y="7" width="2" height="1"/><rect x="5" y="8" width="2" height="1"/><rect x="7" y="9" width="2" height="1"/><rect x="1" y="7" width="2" height="2"/></g></svg>
@@ -4031,6 +4099,40 @@
     const i = state.lbIndex + d;
     if(i >= 0 && i < state.lbList.length) showMediaAt(i);
   }
+
+  async function downloadCurrentMedia(){
+    const m = state.lbList[state.lbIndex];
+    if(!m) return;
+    const isVideo = m.type === 'video' || m.type === 'animated_gif' || (m.mime||'').startsWith('video/');
+    // Prefer the same-origin proxy (covers both media + videos, CORS OK)
+    const src = m.drive_id ? `/v/${encodeURIComponent(m.drive_id)}?v=5` : m.url;
+    if(!src) return;
+    const ext = m.ext || (isVideo ? 'mp4' : 'jpg');
+    const filename = (m.key || ('yumemono-' + Date.now())) + '.' + ext;
+
+    // Pick whichever button is currently visible for the busy spinner
+    const btn = $('#lightbox').classList.contains('open') ? $('#lb-download') : $('#vlb-download');
+    btn?.classList.add('dl-busy');
+    try{
+      const res = await fetch(src, { credentials: 'omit' });
+      if(!res.ok) throw new Error('HTTP ' + res.status);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = filename;
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+    } catch(err){
+      // Fallback — open the URL in a new tab so the user can save manually
+      console.warn('download fetch failed, falling back to open', err);
+      window.open(src, '_blank');
+    } finally {
+      btn?.classList.remove('dl-busy');
+    }
+  }
   function closeVideoLightbox(){
     const v = $('#vlb-video');
     try{ v.pause(); }catch{}
@@ -4188,6 +4290,10 @@
     $('#lb-next').addEventListener('click', e => { e.stopPropagation(); nav(+1); });
     $('#vlb-prev').addEventListener('click', e => { e.stopPropagation(); nav(-1); });
     $('#vlb-next').addEventListener('click', e => { e.stopPropagation(); nav(+1); });
+
+    // Download buttons
+    $('#lb-download')?.addEventListener('click', e => { e.stopPropagation(); downloadCurrentMedia(); });
+    $('#vlb-download')?.addEventListener('click', e => { e.stopPropagation(); downloadCurrentMedia(); });
 
     // Keyboard arrows while a lightbox is open
     document.addEventListener('keydown', e => {
