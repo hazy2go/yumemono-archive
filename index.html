@@ -2310,38 +2310,102 @@
      /mobile
      ========================================================================== */
 
-  /* ===== Quoted tweet card inside a post ===== */
+  /* ===== Quoted tweet card — properly framed, pixel-chrome, left accent ===== */
   .quote-card{
-    display: block; text-decoration: none;
-    margin-top: 10px; padding: 10px 12px;
+    display: block; text-decoration: none; position: relative;
+    margin: 12px 0 4px; padding: 12px 14px 12px 18px;
     border: 2px solid #0a0f22; border-radius: 10px;
-    background: linear-gradient(180deg, rgba(60,50,100,.45), rgba(30,25,60,.6));
-    box-shadow: 2px 2px 0 #0a0f22, inset 0 1px 0 rgba(255,255,255,.3);
+    background:
+      /* subtle seigaiha wave tile behind everything */
+      url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 20'><g fill='none' stroke='%23ffffff' stroke-width='.4' opacity='.08'><path d='M0 20a10 10 0 0 1 20 0M20 20a10 10 0 0 1 20 0M-10 10a10 10 0 0 1 20 0M10 10a10 10 0 0 1 20 0M30 10a10 10 0 0 1 20 0'/></g></svg>") 0 0 / 40px 20px,
+      linear-gradient(180deg, rgba(55,48,95,.72) 0%, rgba(35,28,65,.78) 100%);
+    box-shadow:
+      3px 3px 0 #0a0f22,
+      inset 0 2px 0 rgba(255,255,255,.22),
+      inset 0 -2px 0 rgba(0,0,0,.3);
+    overflow: hidden;
     transition: .12s;
   }
-  .quote-card:hover{ transform: translate(-1px,-1px); box-shadow: 3px 3px 0 #0a0f22, inset 0 1px 0 rgba(255,255,255,.35) }
+  /* left accent ribbon — chunky amber bar signals "quoting" */
+  .quote-card::before{
+    content: "";
+    position: absolute; left: 0; top: 0; bottom: 0; width: 5px;
+    background: linear-gradient(180deg, #ffd98a 0%, #f2a63a 50%, #c25424 100%);
+    border-right: 1px solid rgba(10,15,34,.5);
+    box-shadow: inset -1px 0 0 rgba(255,255,255,.25);
+  }
+  /* top-right pixel quotation mark badge */
+  .quote-card::after{
+    content: "❝";
+    position: absolute; top: 4px; right: 8px;
+    font-family: 'DotGothic16', serif; font-size: 32px; line-height: 1;
+    color: #ffd98a; opacity: .85;
+    text-shadow: 2px 2px 0 #0a0f22;
+    pointer-events: none;
+  }
+  .quote-card:hover{
+    transform: translate(-1px,-1px);
+    box-shadow: 4px 4px 0 #0a0f22, inset 0 2px 0 rgba(255,255,255,.3), inset 0 -2px 0 rgba(0,0,0,.3);
+    background:
+      url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 20'><g fill='none' stroke='%23ffffff' stroke-width='.4' opacity='.1'><path d='M0 20a10 10 0 0 1 20 0M20 20a10 10 0 0 1 20 0M-10 10a10 10 0 0 1 20 0M10 10a10 10 0 0 1 20 0M30 10a10 10 0 0 1 20 0'/></g></svg>") 0 0 / 40px 20px,
+      linear-gradient(180deg, rgba(90,70,140,.8) 0%, rgba(55,42,95,.85) 100%);
+  }
+
   .quote-card .q-head{
-    display: flex; align-items: center; gap: 8px; margin-bottom: 6px;
-    font-family: 'VT323', monospace; font-size: 13px;
+    display: flex; align-items: center; gap: 10px;
+    padding-right: 32px; /* clear the quotation mark badge */
+    margin-bottom: 8px;
   }
   .quote-card .q-av{
-    width: 22px; height: 22px; border-radius: 4px; object-fit: cover;
-    border: 1.5px solid #0a0f22; image-rendering: pixelated;
-    box-shadow: 1px 1px 0 #0a0f22;
+    flex: none;
+    width: 32px; height: 32px; border-radius: 6px; object-fit: cover;
+    border: 2px solid #0a0f22; image-rendering: pixelated;
+    box-shadow: 2px 2px 0 #0a0f22, inset 0 1px 0 rgba(255,255,255,.4);
+    background: #4a3f6a;
+  }
+  .quote-card .q-name-block{
+    display: flex; flex-direction: column; min-width: 0; gap: 1px;
   }
   .quote-card .q-name{
-    font-family: 'DotGothic16', monospace; font-size: 14px; color: #fff6e6;
-    text-shadow: -1px -1px 0 #0a0f22, 1px -1px 0 #0a0f22, -1px 1px 0 #0a0f22, 1px 1px 0 #0a0f22;
+    font-family: 'DotGothic16', monospace; font-size: 15px; color: #fff6e6;
+    line-height: 1.1;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    text-shadow:
+      -1px -1px 0 #0a0f22, 1px -1px 0 #0a0f22,
+      -1px  1px 0 #0a0f22, 1px  1px 0 #0a0f22;
   }
-  .quote-card .q-handle{ color: #e8c4a8; text-shadow: 1px 1px 0 #0a0f22 }
-  .quote-card .q-arrow{ margin-left: auto; color: #ffd98a; text-shadow: 1px 1px 0 #0a0f22 }
+  .quote-card .q-handle{
+    font-family: 'VT323', monospace; font-size: 12.5px; color: #e8c4a8;
+    text-shadow: 1px 1px 0 #0a0f22;
+    letter-spacing: .3px;
+  }
   .quote-card .q-body{
     font-family: 'M PLUS Rounded 1c', system-ui, sans-serif;
-    font-size: 13.5px; font-weight: 500; line-height: 1.5;
-    color: #f2e0cf; text-shadow: 1px 1px 0 #0a0f22;
+    font-size: 13.5px; font-weight: 500; line-height: 1.55;
+    color: #f4e7d3;
+    text-shadow: 1px 1px 0 #0a0f22;
     overflow-wrap: anywhere; word-break: break-word;
+    padding-left: 2px;
   }
-  .quote-card .q-body a{ color: #ffd98a; text-decoration: underline rgba(255,217,138,.5) }
+  .quote-card .q-body a{
+    color: #ffd98a !important;
+    text-decoration: underline rgba(255,217,138,.45);
+    text-underline-offset: 2px;
+  }
+  .quote-card .q-body a:hover{ text-decoration-color: #ffd98a }
+  .quote-card .q-footer{
+    display: flex; align-items: center; gap: 6px;
+    margin-top: 8px; padding-top: 6px;
+    border-top: 1px dashed rgba(255,240,230,.2);
+    font-family: 'VT323', monospace; font-size: 12px; color: #c8b8e0;
+    letter-spacing: 1px;
+    text-shadow: 1px 1px 0 #0a0f22;
+  }
+  .quote-card .q-footer .q-arrow{
+    margin-left: auto; color: #ffd98a;
+    font-family: 'VT323', monospace; font-size: 13px;
+    text-shadow: 1px 1px 0 #0a0f22;
+  }
 
   /* ===== Lightbox navigation arrows (pixel) + meta strip ===== */
   .lb-nav{
@@ -2448,6 +2512,33 @@
     font-family: 'VT323', monospace; font-size: 11px; color: #bfd8ff;
     letter-spacing: 1.4px;
   }
+  /* PFP tile: amber accent ring + handle ribbon so it reads as a member card */
+  .g-item.g-pfp{
+    border-color: #0a0f22;
+    box-shadow: 2px 2px 0 #0a0f22, inset 0 0 0 2px #ffd98a;
+    background: linear-gradient(180deg, #3e2b6a, #1a1440);
+  }
+  .g-item.g-pfp:hover{ box-shadow: 4px 4px 0 #0a0f22, inset 0 0 0 2px #ffcf4e }
+  .g-item.g-pfp img{ padding: 6px; object-fit: cover; background: transparent }
+  .g-item .g-pfp-handle{
+    position: absolute; bottom: 0; left: 0; right: 0;
+    padding: 4px 6px; text-align: center;
+    font-family: 'VT323', monospace; font-size: 11px; letter-spacing: .8px;
+    color: #fff6e6; background: linear-gradient(180deg, rgba(10,15,34,.2), rgba(10,15,34,.9));
+    text-shadow: 1px 1px 0 #0a0f22;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    border-top: 1px solid rgba(255,217,138,.4);
+    z-index: 2;
+  }
+  .g-item .g-pfp-badge{
+    background: linear-gradient(180deg,#ffd98a,#c25424) !important;
+    color: #0a0f22 !important;
+    font-family: 'DotGothic16', monospace; font-size: 14px; font-weight: 400;
+    line-height: 1;
+    width: 20px !important; height: 20px !important;
+    text-shadow: none !important; border: 1.5px solid #0a0f22 !important;
+  }
+  .g-item .g-pfp-badge::after{ display: none !important }
 
   @media (max-width: 720px){
     .lb-nav{ width: 44px; height: 60px }
@@ -2984,6 +3075,7 @@
         <button class="g-filter active" data-g-filter="all" type="button">All</button>
         <button class="g-filter" data-g-filter="photo" type="button">Photos</button>
         <button class="g-filter" data-g-filter="video" type="button">Videos</button>
+        <button class="g-filter" data-g-filter="pfp" type="button">PFPs</button>
         <span class="members-count" id="gallery-count">—</span>
       </div>
       <div class="gallery-grid" id="gallery-grid"></div>
@@ -3455,17 +3547,24 @@
     const qUrl = q.url || (q.author && q.id ? `https://x.com/${q.author}/status/${q.id}` : '#');
     const name = q.author_name || q.author || 'unknown';
     const body = q.body || '';
+    const initial = escapeHtml((name).trim().charAt(0).toUpperCase()) || '?';
+    const avatar = q.author_avatar
+      ? `<img class="q-av" src="${escapeHtml(q.author_avatar)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'q-av',textContent:'${initial}',style:'display:grid;place-items:center;font-family:DotGothic16,monospace;font-size:15px;color:#fff6e6;text-shadow:1px 1px 0 #0a0f22'}))">`
+      : `<div class="q-av" style="display:grid;place-items:center;font-family:DotGothic16,monospace;font-size:15px;color:#fff6e6;text-shadow:1px 1px 0 #0a0f22">${initial}</div>`;
     return `
       <a class="quote-card" href="${escapeHtml(qUrl)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">
         <div class="q-head">
-          ${q.author_avatar
-            ? `<img class="q-av" src="${escapeHtml(q.author_avatar)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display='none'">`
-            : ''}
-          <span class="q-name">${escapeHtml(name)}</span>
-          ${q.author ? `<span class="q-handle">@${escapeHtml(q.author)}</span>` : ''}
-          <span class="q-arrow">↗</span>
+          ${avatar}
+          <div class="q-name-block">
+            <span class="q-name">${escapeHtml(name)}</span>
+            ${q.author ? `<span class="q-handle">@${escapeHtml(q.author)}</span>` : ''}
+          </div>
         </div>
         <div class="q-body">${body ? linkify(body) : '<em style="opacity:.6">(quoted tweet)</em>'}</div>
+        <div class="q-footer">
+          <span>quoted post</span>
+          <span class="q-arrow">open on X ↗</span>
+        </div>
       </a>
     `;
   }
@@ -3610,21 +3709,47 @@
   /* ============================================================
      Gallery
      ============================================================ */
+  function buildPFPList(){
+    // Build once: every author with an avatar becomes a gallery-eligible PFP
+    return state.authors
+      .filter(a => a.avatar)
+      .map(a => ({
+        kind: 'pfp',
+        type: 'pfp',
+        url: a.avatar,
+        thumb: a.avatar,
+        author: a.handle,
+        name: a.name,
+        posts: a.posts,
+      }));
+  }
+
   function renderGallery(){
     const filter = state.galleryFilter;
-    const list = state.allMedia.filter(m => {
-      if(filter === 'all') return true;
-      const isVideo = m.type === 'video' || m.type === 'animated_gif' || (m.mime||'').startsWith('video/');
-      return filter === 'video' ? isVideo : !isVideo;
-    });
-    state.galleryView = list;
-    $('#gallery-count').textContent = fmt(list.length) + ' / ' + fmt(state.allMedia.length);
-    $('#gallery-status').textContent = `${fmt(list.length)} items`;
+    const pfps = state._pfps || (state._pfps = buildPFPList());
+    const photosVideos = state.allMedia;
+    const everything = filter === 'pfp'
+      ? pfps
+      : filter === 'photo'
+        ? photosVideos.filter(m => !(m.type === 'video' || m.type === 'animated_gif' || (m.mime||'').startsWith('video/')))
+        : filter === 'video'
+          ? photosVideos.filter(m => m.type === 'video' || m.type === 'animated_gif' || (m.mime||'').startsWith('video/'))
+          : [...photosVideos, ...pfps];
+
+    state.galleryView = everything;
+    const totalAll = photosVideos.length + pfps.length;
+    $('#gallery-count').textContent = fmt(everything.length) + ' / ' + fmt(totalAll);
+    $('#gallery-status').textContent = `${fmt(everything.length)} items`;
     const grid = $('#gallery-grid');
-    // Render ~600 items max initially for snappier open; user can scroll
-    // through them. Could virtualize later if needed.
-    const toRender = list.slice(0, 600);
+    const toRender = everything.slice(0, 800);
     grid.innerHTML = toRender.map((m, i) => {
+      if(m.kind === 'pfp'){
+        return `<div class="g-item g-pfp" data-idx="${i}" data-kind="pfp" data-handle="${escapeHtml(m.author||'')}" title="@${escapeHtml(m.author||'')} · ${fmt(m.posts||0)} posts">
+          <img src="${escapeHtml(m.thumb)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.parentElement.classList.add('broken');this.remove();this.parentElement.textContent='@${escapeHtml(m.author||'')}'">
+          <span class="g-pfp-handle">@${escapeHtml(m.author||'')}</span>
+          <span class="g-badge g-pfp-badge" aria-hidden="true">◉</span>
+        </div>`;
+      }
       const isVideo = m.type === 'video' || m.type === 'animated_gif' || (m.mime||'').startsWith('video/');
       const thumb = m.drive_id
         ? (isVideo
@@ -3636,9 +3761,9 @@
         ${isVideo ? '<span class="g-badge"></span>' : ''}
       </div>`;
     }).join('');
-    if(list.length > toRender.length){
+    if(everything.length > toRender.length){
       grid.insertAdjacentHTML('beforeend',
-        `<div class="g-item broken" style="grid-column: 1/-1; aspect-ratio: auto; padding: 16px; text-align:center">+ ${fmt(list.length - toRender.length)} more (scroll through older posts in the feed)</div>`);
+        `<div class="g-item broken" style="grid-column: 1/-1; aspect-ratio: auto; padding: 16px; text-align:center">+ ${fmt(everything.length - toRender.length)} more</div>`);
     }
   }
   function openGallery(){
@@ -3918,9 +4043,18 @@
       const item = e.target.closest('.g-item:not(.broken)');
       if(item && item.dataset.idx != null){
         const idx = parseInt(item.dataset.idx, 10);
-        // Navigable sequence = the current gallery filter list
-        setLbList(state.galleryView, idx);
-        showMediaAt(idx);
+        const m = state.galleryView[idx];
+        if(m && m.kind === 'pfp' && m.author){
+          // PFP click → filter the feed by that author
+          filterByHandle(m.author);
+          closeGallery();
+          return;
+        }
+        // Navigable sequence = only the photos/videos in the current filter
+        const mediaList = state.galleryView.filter(x => x.kind !== 'pfp');
+        const mediaIdx = mediaList.indexOf(m);
+        setLbList(mediaList, Math.max(0, mediaIdx));
+        showMediaAt(Math.max(0, mediaIdx));
       }
     });
 

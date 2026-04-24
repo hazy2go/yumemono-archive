@@ -89,6 +89,7 @@ def build(
     drive_map_path: Path | None = None,
     tco_map_path: Path | None = None,
     avatars_map_path: Path | None = None,
+    local_avatars_dir: Path | None = None,
 ) -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
     con = sqlite3.connect(db_path)
@@ -133,15 +134,27 @@ def build(
     if avatars_map_path and avatars_map_path.exists():
         avatars_map = json.loads(avatars_map_path.read_text())
 
+    # Build a quick filename → ext map for local avatars we bundle into the
+    # deploy site (for authors whose upstream twimg URL 404'd — we re-fetched
+    # them via unavatar.io so they're still preserved).
+    local_avatar_ext: dict[str, str] = {}
+    if local_avatars_dir and local_avatars_dir.is_dir():
+        for p in local_avatars_dir.iterdir():
+            if p.suffix.lower() in (".jpg", ".jpeg", ".png", ".webp"):
+                local_avatar_ext[p.stem] = p.suffix.lower().lstrip(".")
+
     def _avatar_for(row) -> tuple[str | None, str]:
-        """Return (url, source) for an author. Prefer Drive mirror when available."""
+        """Return (url, source) for an author. Prefers:
+           local bundled file → Drive mirror → twimg (live, may 404)"""
         author_x_id = row["author_x_id"]
+        if author_x_id and author_x_id in local_avatar_ext:
+            ext = local_avatar_ext[author_x_id]
+            return f"/avatars/{author_x_id}.{ext}", "local"
         if author_x_id and avatars_map:
             for ext in ("jpg", "png", "jpeg", "webp"):
                 fid = avatars_map.get(f"{author_x_id}.{ext}")
                 if fid:
                     return f"https://lh3.googleusercontent.com/d/{fid}=w400", "drive"
-        # fall back to the twimg URL, preferring new avatar_url column
         raw = None
         if has_avatar_cols:
             raw = row["avatar_url"]
@@ -328,8 +341,10 @@ def main() -> None:
                     help="JSON map { https://t.co/xxx: https://expanded.url } to expand shortlinks")
     ap.add_argument("--avatars-map", type=Path, default=None,
                     help="JSON map { {author_x_id}.jpg: drive_file_id } for author avatars")
+    ap.add_argument("--local-avatars-dir", type=Path, default=None,
+                    help="Directory with {author_x_id}.jpg|png files bundled into the site /avatars/ path")
     args = ap.parse_args()
-    build(args.db, args.out, args.drive_map, args.tco_map, args.avatars_map)
+    build(args.db, args.out, args.drive_map, args.tco_map, args.avatars_map, args.local_avatars_dir)
 
 
 if __name__ == "__main__":
