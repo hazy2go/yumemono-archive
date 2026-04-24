@@ -88,6 +88,7 @@ def build(
     out_dir: Path,
     drive_map_path: Path | None = None,
     tco_map_path: Path | None = None,
+    avatars_map_path: Path | None = None,
 ) -> None:
     out_dir.mkdir(parents=True, exist_ok=True)
     con = sqlite3.connect(db_path)
@@ -111,19 +112,54 @@ def build(
 
     community = dict(con.execute("SELECT * FROM communities LIMIT 1").fetchone())
 
+    # Check which new fields exist (migrations 004/005 add them).
+    author_cols = {r[1] for r in con.execute("PRAGMA table_info(authors)").fetchall()}
+    post_cols   = {r[1] for r in con.execute("PRAGMA table_info(posts)").fetchall()}
+
+    has_avatar_cols = {"avatar_url", "avatar_mirror_status"}.issubset(author_cols)
+    has_quote_cols  = {"is_quote_post", "quoted_post_x_id"}.issubset(post_cols)
+    has_seed_col    = "is_seed_post" in post_cols
+
+    author_fields = [
+        "id", "author_x_id", "handle", "display_name", "profile_url", "raw_profile_path",
+    ]
+    if has_avatar_cols:
+        author_fields += ["avatar_url", "avatar_mirror_status", "avatar_local_path"]
     authors_rows = con.execute(
-        "SELECT id, author_x_id, handle, display_name, profile_url, raw_profile_path FROM authors"
+        f"SELECT {', '.join(author_fields)} FROM authors"
     ).fetchall()
-    authors = {
-        r["id"]: {
+    # Load the Drive avatars map if provided (separate folder from post media)
+    avatars_map: dict[str, str] = {}
+    if avatars_map_path and avatars_map_path.exists():
+        avatars_map = json.loads(avatars_map_path.read_text())
+
+    def _avatar_for(row) -> tuple[str | None, str]:
+        """Return (url, source) for an author. Prefer Drive mirror when available."""
+        author_x_id = row["author_x_id"]
+        if author_x_id and avatars_map:
+            for ext in ("jpg", "png", "jpeg", "webp"):
+                fid = avatars_map.get(f"{author_x_id}.{ext}")
+                if fid:
+                    return f"https://lh3.googleusercontent.com/d/{fid}=w400", "drive"
+        # fall back to the twimg URL, preferring new avatar_url column
+        raw = None
+        if has_avatar_cols:
+            raw = row["avatar_url"]
+        if not raw:
+            raw = row["raw_profile_path"]
+        return upgrade_avatar(raw), ("twimg" if raw else "none")
+
+    authors = {}
+    for r in authors_rows:
+        av_url, av_src = _avatar_for(r)
+        authors[r["id"]] = {
             "id": r["author_x_id"],
             "handle": r["handle"],
             "name": r["display_name"] or r["handle"],
             "url": r["profile_url"],
-            "avatar": upgrade_avatar(r["raw_profile_path"]),
+            "avatar": av_url,
+            "avatar_src": av_src,
         }
-        for r in authors_rows
-    }
 
     media_rows = con.execute(
         "SELECT owner_post_x_id, media_key, source_url, media_type, mime_type, local_path "
@@ -180,13 +216,19 @@ def build(
             }
         )
 
+    post_sql_cols = [
+        "post_x_id", "author_id", "conversation_x_id", "parent_post_x_id",
+        "canonical_url", "kind", "body_text", "posted_at_iso", "posted_at_epoch",
+    ]
+    if has_quote_cols:
+        post_sql_cols += [
+            "is_quote_post", "quoted_post_x_id", "quoted_author_id",
+            "quoted_canonical_url", "quoted_body_text",
+        ]
+    if has_seed_col:
+        post_sql_cols += ["is_seed_post"]
     post_rows = con.execute(
-        """
-        SELECT post_x_id, author_id, conversation_x_id, parent_post_x_id,
-               canonical_url, kind, body_text, posted_at_iso, posted_at_epoch
-        FROM posts
-        ORDER BY posted_at_epoch DESC
-        """
+        f"SELECT {', '.join(post_sql_cols)} FROM posts ORDER BY posted_at_epoch DESC"
     ).fetchall()
 
     posts = []
@@ -203,22 +245,33 @@ def build(
         media = media_by_post.get(r["post_x_id"], [])
         body_stripped = strip_trailing_tco(r["body_text"], len(media))
         body_expanded = expand_tco_links(body_stripped, tco_map)
-        posts.append(
-            {
-                "id": r["post_x_id"],
-                "kind": r["kind"],
-                "body": body_expanded,
-                "raw": r["body_text"] or "",
-                "ts": r["posted_at_epoch"],
-                "iso": r["posted_at_iso"],
-                "conv": r["conversation_x_id"],
-                "parent": r["parent_post_x_id"],
-                "url": r["canonical_url"],
-                "author": author["handle"] if author else None,
-                "media": media,
-                "replies": reply_counts.get(r["post_x_id"], 0),
+        post_dict = {
+            "id": r["post_x_id"],
+            "kind": r["kind"],
+            "body": body_expanded,
+            "raw": r["body_text"] or "",
+            "ts": r["posted_at_epoch"],
+            "iso": r["posted_at_iso"],
+            "conv": r["conversation_x_id"],
+            "parent": r["parent_post_x_id"],
+            "url": r["canonical_url"],
+            "author": author["handle"] if author else None,
+            "media": media,
+            "replies": reply_counts.get(r["post_x_id"], 0),
+        }
+        if has_seed_col and r["is_seed_post"]:
+            post_dict["seed"] = True
+        if has_quote_cols and r["is_quote_post"] and r["quoted_post_x_id"]:
+            qa = authors.get(r["quoted_author_id"]) if r["quoted_author_id"] else None
+            post_dict["quote"] = {
+                "id": r["quoted_post_x_id"],
+                "url": r["quoted_canonical_url"],
+                "body": expand_tco_links(r["quoted_body_text"] or "", tco_map),
+                "author": qa["handle"] if qa else None,
+                "author_name": qa["name"] if qa else None,
+                "author_avatar": qa["avatar"] if qa else None,
             }
-        )
+        posts.append(post_dict)
 
     # author list sorted by activity
     author_list = sorted(
@@ -273,8 +326,10 @@ def main() -> None:
                     help="JSON map { filename: drive_file_id } to rewrite media URLs to Drive")
     ap.add_argument("--tco-map", type=Path, default=None,
                     help="JSON map { https://t.co/xxx: https://expanded.url } to expand shortlinks")
+    ap.add_argument("--avatars-map", type=Path, default=None,
+                    help="JSON map { {author_x_id}.jpg: drive_file_id } for author avatars")
     args = ap.parse_args()
-    build(args.db, args.out, args.drive_map, args.tco_map)
+    build(args.db, args.out, args.drive_map, args.tco_map, args.avatars_map)
 
 
 if __name__ == "__main__":

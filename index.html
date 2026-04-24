@@ -9,7 +9,7 @@
 <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 <link rel="apple-touch-icon" href="/icon-512.png" />
 <meta property="og:title" content="Yumemono Archive — 夢物" />
-<meta property="og:description" content="A preservation of the Yumemono X community: 1,349 posts, 255 members, 965 media items mirrored to durable storage." />
+<meta property="og:description" content="A preservation of the Yumemono X community: 7,339 posts, 888 members, 1,256 media items mirrored to durable storage." />
 <meta property="og:type" content="website" />
 <meta property="og:url" content="https://yumemono-archive.vercel.app/" />
 <meta property="og:image" content="https://yumemono-archive.vercel.app/og.png" />
@@ -17,7 +17,7 @@
 <meta property="og:image:height" content="1200" />
 <meta name="twitter:card" content="summary_large_image" />
 <meta name="twitter:title" content="Yumemono Archive — 夢物" />
-<meta name="twitter:description" content="A preservation of the Yumemono X community: 1,349 posts, 255 members, 965 media items mirrored to durable storage." />
+<meta name="twitter:description" content="A preservation of the Yumemono X community: 7,339 posts, 888 members, 1,256 media items mirrored to durable storage." />
 <meta name="twitter:image" content="https://yumemono-archive.vercel.app/og.png" />
 <title>Yumemono Archive</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -2310,6 +2310,39 @@
      /mobile
      ========================================================================== */
 
+  /* ===== Quoted tweet card inside a post ===== */
+  .quote-card{
+    display: block; text-decoration: none;
+    margin-top: 10px; padding: 10px 12px;
+    border: 2px solid #0a0f22; border-radius: 10px;
+    background: linear-gradient(180deg, rgba(60,50,100,.45), rgba(30,25,60,.6));
+    box-shadow: 2px 2px 0 #0a0f22, inset 0 1px 0 rgba(255,255,255,.3);
+    transition: .12s;
+  }
+  .quote-card:hover{ transform: translate(-1px,-1px); box-shadow: 3px 3px 0 #0a0f22, inset 0 1px 0 rgba(255,255,255,.35) }
+  .quote-card .q-head{
+    display: flex; align-items: center; gap: 8px; margin-bottom: 6px;
+    font-family: 'VT323', monospace; font-size: 13px;
+  }
+  .quote-card .q-av{
+    width: 22px; height: 22px; border-radius: 4px; object-fit: cover;
+    border: 1.5px solid #0a0f22; image-rendering: pixelated;
+    box-shadow: 1px 1px 0 #0a0f22;
+  }
+  .quote-card .q-name{
+    font-family: 'DotGothic16', monospace; font-size: 14px; color: #fff6e6;
+    text-shadow: -1px -1px 0 #0a0f22, 1px -1px 0 #0a0f22, -1px 1px 0 #0a0f22, 1px 1px 0 #0a0f22;
+  }
+  .quote-card .q-handle{ color: #e8c4a8; text-shadow: 1px 1px 0 #0a0f22 }
+  .quote-card .q-arrow{ margin-left: auto; color: #ffd98a; text-shadow: 1px 1px 0 #0a0f22 }
+  .quote-card .q-body{
+    font-family: 'M PLUS Rounded 1c', system-ui, sans-serif;
+    font-size: 13.5px; font-weight: 500; line-height: 1.5;
+    color: #f2e0cf; text-shadow: 1px 1px 0 #0a0f22;
+    overflow-wrap: anywhere; word-break: break-word;
+  }
+  .quote-card .q-body a{ color: #ffd98a; text-decoration: underline rgba(255,217,138,.5) }
+
   /* ===== Lightbox navigation arrows (pixel) + meta strip ===== */
   .lb-nav{
     position: absolute; top: 50%; transform: translateY(-50%);
@@ -3417,6 +3450,26 @@
     return `<div class="media-grid n${n}">${items}</div>`;
   }
 
+  function quoteHTML(q){
+    if(!q) return '';
+    const qUrl = q.url || (q.author && q.id ? `https://x.com/${q.author}/status/${q.id}` : '#');
+    const name = q.author_name || q.author || 'unknown';
+    const body = q.body || '';
+    return `
+      <a class="quote-card" href="${escapeHtml(qUrl)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">
+        <div class="q-head">
+          ${q.author_avatar
+            ? `<img class="q-av" src="${escapeHtml(q.author_avatar)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display='none'">`
+            : ''}
+          <span class="q-name">${escapeHtml(name)}</span>
+          ${q.author ? `<span class="q-handle">@${escapeHtml(q.author)}</span>` : ''}
+          <span class="q-arrow">↗</span>
+        </div>
+        <div class="q-body">${body ? linkify(body) : '<em style="opacity:.6">(quoted tweet)</em>'}</div>
+      </a>
+    `;
+  }
+
   function kindBadge(kind){
     if(!kind || kind==='timeline') return '';
     const label = kind === 'thread_root' ? 'thread' : 'reply';
@@ -3448,6 +3501,7 @@
             ${xurl ? ` <a class="handle" href="${escapeHtml(xurl)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" title="Open on X">↗</a>` : ''}
           </div>
           <div class="body">${p.body ? linkify(p.body) : '<em style="opacity:.6">(no text)</em>'}</div>
+          ${quoteHTML(p.quote)}
           ${mediaHTML(p.media, xurl)}
           ${replyChip}
         </div>
