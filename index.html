@@ -2379,25 +2379,36 @@
     text-shadow: 1px 1px 0 #0a0f22;
     letter-spacing: .3px;
   }
-  .quote-card .q-body,
-  .quote-card .q-body *:not(a){
+  /* force-reset the quote-card's own color so descendants inherit cream
+     regardless of the outer anchor's :visited / user-agent color */
+  a.quote-card, a.quote-card:visited, a.quote-card:link,
+  .quote-card{
+    color: #fff6e6 !important;
+    -webkit-text-fill-color: #fff6e6 !important;
+  }
+  .msg .quote-card .q-body,
+  .msg .quote-card .q-body *{
     font-family: 'M PLUS Rounded 1c', system-ui, sans-serif;
     font-size: 13.5px; font-weight: 500; line-height: 1.55;
     color: #fff6e6 !important;
+    -webkit-text-fill-color: #fff6e6 !important;
     text-shadow:
       -1px -1px 0 #0a0f22, 1px -1px 0 #0a0f22,
       -1px  1px 0 #0a0f22, 1px  1px 0 #0a0f22 !important;
     overflow-wrap: anywhere; word-break: break-word;
   }
-  .quote-card .q-body a{
+  .msg .quote-card .q-body a,
+  .msg .quote-card .q-body a:visited,
+  .msg .quote-card .q-body a:link{
     color: #ffd98a !important;
+    -webkit-text-fill-color: #ffd98a !important;
     text-decoration: underline rgba(255,217,138,.5) !important;
     text-underline-offset: 2px;
     text-shadow:
       -1px -1px 0 #0a0f22, 1px -1px 0 #0a0f22,
       -1px  1px 0 #0a0f22, 1px  1px 0 #0a0f22 !important;
   }
-  .quote-card .q-body a:hover{ text-decoration-color: #ffd98a !important }
+  .msg .quote-card .q-body a:hover{ text-decoration-color: #ffd98a !important }
   .quote-card .q-footer{
     display: flex; align-items: center; gap: 6px;
     margin-top: 8px; padding-top: 6px;
@@ -3627,7 +3638,10 @@
         </div>
         ${inArchive ? `<span class="q-archive-badge" title="Quoted post is preserved in this archive">◆ archived</span>` : ''}
       </div>`;
-    const bodyHtml = `<div class="q-body">${body ? linkify(body) : '<em style="opacity:.6">(quoted tweet)</em>'}</div>`;
+    // Inline style on q-body is belt-and-braces — guarantees cream text
+     // regardless of any CSS cache or cascade surprise on the client.
+    const bodyStyle = "color:#fff6e6;-webkit-text-fill-color:#fff6e6;text-shadow:-1px -1px 0 #0a0f22,1px -1px 0 #0a0f22,-1px 1px 0 #0a0f22,1px 1px 0 #0a0f22";
+    const bodyHtml = `<div class="q-body" style="${bodyStyle}">${body ? linkify(body) : '<em style="opacity:.6">(quoted tweet)</em>'}</div>`;
 
     // Media attached to the quoted tweet (archived via pipeline)
     let qMediaHtml = '';
@@ -3654,10 +3668,6 @@
           ${head}
           ${bodyHtml}
           ${qMediaHtml}
-          <div class="q-footer">
-            <span>in archive ◆</span>
-            <span class="q-arrow">open thread →</span>
-          </div>
         </div>
       `;
     }
@@ -3666,10 +3676,6 @@
         ${head}
         ${bodyHtml}
         ${qMediaHtml}
-        <div class="q-footer">
-          <span>quoted post</span>
-          <span class="q-arrow">open on X ↗</span>
-        </div>
       </a>
     `;
   }
