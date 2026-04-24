@@ -2407,6 +2407,27 @@
     text-shadow: 1px 1px 0 #0a0f22;
   }
 
+  /* Archived-quote variant — signals the quoted post lives in THIS archive,
+     so clicking opens the thread modal instead of jumping to X. */
+  .quote-card.quote-local{ cursor: pointer }
+  .quote-card .q-archive-badge{
+    margin-left: auto;
+    padding: 2px 8px; border-radius: 4px;
+    font-family: 'VT323', monospace; font-size: 11px; letter-spacing: 1.2px;
+    color: #1a1730;
+    background: linear-gradient(180deg, #ffe8a6, #ffcf4e);
+    border: 1.5px solid #0a0f22;
+    box-shadow: 1px 1px 0 #0a0f22, inset 0 1px 0 rgba(255,255,255,.6);
+    text-shadow: 1px 1px 0 rgba(255,255,255,.4);
+    white-space: nowrap;
+  }
+  /* archived quotes get a green accent ribbon instead of amber */
+  .quote-card.quote-local::before{
+    background: linear-gradient(180deg, #a8e5b4 0%, #4ecf76 50%, #1e7f42 100%) !important;
+  }
+  .quote-card.quote-local::after{ content: "❝" }
+  .quote-card.quote-local:focus-visible{ outline: 2px solid #ffd98a; outline-offset: 2px }
+
   /* ===== Lightbox navigation arrows (pixel) + meta strip ===== */
   .lb-nav{
     position: absolute; top: 50%; transform: translateY(-50%);
@@ -3551,16 +3572,37 @@
     const avatar = q.author_avatar
       ? `<img class="q-av" src="${escapeHtml(q.author_avatar)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'q-av',textContent:'${initial}',style:'display:grid;place-items:center;font-family:DotGothic16,monospace;font-size:15px;color:#fff6e6;text-shadow:1px 1px 0 #0a0f22'}))">`
       : `<div class="q-av" style="display:grid;place-items:center;font-family:DotGothic16,monospace;font-size:15px;color:#fff6e6;text-shadow:1px 1px 0 #0a0f22">${initial}</div>`;
-    return `
-      <a class="quote-card" href="${escapeHtml(qUrl)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">
-        <div class="q-head">
-          ${avatar}
-          <div class="q-name-block">
-            <span class="q-name">${escapeHtml(name)}</span>
-            ${q.author ? `<span class="q-handle">@${escapeHtml(q.author)}</span>` : ''}
+
+    // If the quoted post is itself in the archive, route the click to our
+    // internal thread viewer instead of bouncing out to X.
+    const inArchive = q.id && state.postById.has(q.id);
+    const head = `
+      <div class="q-head">
+        ${avatar}
+        <div class="q-name-block">
+          <span class="q-name">${escapeHtml(name)}</span>
+          ${q.author ? `<span class="q-handle">@${escapeHtml(q.author)}</span>` : ''}
+        </div>
+        ${inArchive ? `<span class="q-archive-badge" title="Quoted post is preserved in this archive">◆ archived</span>` : ''}
+      </div>`;
+    const bodyHtml = `<div class="q-body">${body ? linkify(body) : '<em style="opacity:.6">(quoted tweet)</em>'}</div>`;
+
+    if(inArchive){
+      return `
+        <div class="quote-card quote-local" data-open-post="${escapeHtml(q.id)}" role="button" tabindex="0">
+          ${head}
+          ${bodyHtml}
+          <div class="q-footer">
+            <span>in archive ◆</span>
+            <span class="q-arrow">open thread →</span>
           </div>
         </div>
-        <div class="q-body">${body ? linkify(body) : '<em style="opacity:.6">(quoted tweet)</em>'}</div>
+      `;
+    }
+    return `
+      <a class="quote-card" href="${escapeHtml(qUrl)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">
+        ${head}
+        ${bodyHtml}
         <div class="q-footer">
           <span>quoted post</span>
           <span class="q-arrow">open on X ↗</span>
@@ -3958,6 +4000,13 @@
     });
 
     function onFeedClick(e){
+      // archived quote-card → open the quoted post's thread inside the archive
+      const qLocal = e.target.closest('.quote-card.quote-local[data-open-post]');
+      if(qLocal){
+        e.stopPropagation();
+        openThread(qLocal.dataset.openPost);
+        return;
+      }
       if(e.target.closest('a')) return;
       // media click → open the media at that index, with THAT post's media
       // as the navigable sequence (so prev/next walks within the tweet).
@@ -4022,6 +4071,13 @@
 
     // mobile-only members button
     $('#members-btn')?.addEventListener('click', openMembers);
+
+    // Enter / Space on an archived quote card (keyboard access)
+    document.addEventListener('keydown', e => {
+      if(e.key !== 'Enter' && e.key !== ' ') return;
+      const q = document.activeElement?.closest?.('.quote-card.quote-local[data-open-post]');
+      if(q){ e.preventDefault(); openThread(q.dataset.openPost); }
+    });
 
     // Gallery
     $('#gallery-btn')?.addEventListener('click', openGallery);
