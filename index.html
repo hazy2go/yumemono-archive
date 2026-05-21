@@ -4698,18 +4698,80 @@
     }
   }
 
+  function gbIsMobile(){
+    return (window.matchMedia && window.matchMedia('(max-width: 720px)').matches)
+      || ('ontouchstart' in window && window.innerWidth < 800);
+  }
+
   function openVerifyPopup(){
-    const url = 'https://nftroles.xyz/verify/yume';
+    const returnTo = window.location.origin + window.location.pathname + '?guestbook=1';
+    const url = 'https://nftroles.xyz/verify/yume?return_to=' + encodeURIComponent(returnTo);
+    if(gbIsMobile()){
+      // On mobile, popups become foreign tabs with no opener — use a
+      // same-tab redirect and rely on the return_to fragment to resume.
+      try{ sessionStorage.setItem('guestbookPending', '1'); } catch (_){ /* ignore */ }
+      window.location.href = url;
+      return;
+    }
     const w = 460, h = 640;
     const left = Math.round((window.outerWidth - w) / 2 + (window.screenX || 0));
     const top = Math.round((window.outerHeight - h) / 2 + (window.screenY || 0));
     const features = `width=${w},height=${h},left=${left},top=${top},menubar=no,toolbar=no,location=yes`;
     guestbookState.popup = window.open(url, 'yume-verify', features);
     if(!guestbookState.popup){
-      gbShowError('couldn\'t open the verify popup — check your browser\'s popup blocker.');
+      // Popup blocked → fall back to same-tab redirect.
+      try{ sessionStorage.setItem('guestbookPending', '1'); } catch (_){ /* ignore */ }
+      window.location.href = url;
       return;
     }
     $('#gb-status-cell').textContent = 'waiting for verify…';
+  }
+
+  function consumeReturnFragment(){
+    // Token may arrive in the URL hash (#yume-token=...&yume-address=...)
+    // after a same-tab verify redirect.
+    if(!window.location.hash) return false;
+    const params = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+    const token = params.get('yume-token');
+    const address = params.get('yume-address');
+    if(!token) return false;
+    guestbookState.token = token;
+    guestbookState.address = (address || '').toLowerCase();
+    // Clean the URL so the token isn't preserved in history / shared links.
+    try{
+      const clean = window.location.pathname + window.location.search;
+      window.history.replaceState({}, document.title, clean);
+    } catch (_){ /* ignore */ }
+    return true;
+  }
+
+  function resumeGuestbookIfPending(){
+    const had = consumeReturnFragment();
+    const qsPending = new URLSearchParams(window.location.search).get('guestbook');
+    let pending = false;
+    try{
+      pending = sessionStorage.getItem('guestbookPending') === '1';
+      if(pending) sessionStorage.removeItem('guestbookPending');
+    } catch (_){ /* ignore */ }
+    if(had || pending || qsPending){
+      openGuestbook();
+      if(had){
+        $('#gb-status-cell').textContent = 'verified';
+        $('#guestbook-sign').hidden = true;
+        $('#guestbook-compose').hidden = false;
+        const a = guestbookState.address;
+        $('#guestbook-verified-addr').textContent = a ? a.slice(0,6) + '…' + a.slice(-4) : 'verified';
+        setTimeout(() => $('#guestbook-textarea')?.focus(), 100);
+      }
+    }
+    if(qsPending){
+      // Strip the ?guestbook=1 from the URL for cleanliness.
+      try{
+        const url = new URL(window.location.href);
+        url.searchParams.delete('guestbook');
+        window.history.replaceState({}, document.title, url.pathname + (url.search || '') + url.hash);
+      } catch (_){ /* ignore */ }
+    }
   }
 
   function onVerifyMessage(ev){
@@ -4789,6 +4851,8 @@
       $('#guestbook-counter').textContent = (e.target.value.length) + '/280';
     });
     window.addEventListener('message', onVerifyMessage);
+    // After a same-tab verify redirect (mobile fallback), resume the flow.
+    resumeGuestbookIfPending();
   }
 
   async function load(){
