@@ -8,6 +8,8 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 <link rel="apple-touch-icon" href="/icon-512.png" />
+<!-- JSZip (loaded lazily by the profile modal's "Download all" action) -->
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <meta property="og:title" content="Yumemono Archive — 夢物" />
 <meta property="og:description" content="A preservation of the Yumemono X community: 7,423 posts, 903 members, 1,266 media items mirrored to durable storage." />
 <meta property="og:type" content="website" />
@@ -1866,7 +1868,42 @@
   .xp-window::before{ display: none !important }
   .members-card.xp-window > .close{ display: none !important }
 
-  /* ── Guestbook ─────────────────────────────────────────── */
+  /* ── Guestbook hero strip ──────────────────────────────── */
+  .gb-hero{
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 14px;
+    background: linear-gradient(180deg, #fff7e4 0%, #ffe7c0 100%);
+    border: 1.5px solid #0a0f22;
+    box-shadow: 2px 2px 0 #0a0f22, inset 0 1px 0 rgba(255,255,255,.8);
+    font-family: 'VT323', monospace;
+    color: #0a0f22;
+  }
+  .gb-hero-icon{
+    width: 32px; height: 32px;
+    display: flex; align-items: center; justify-content: center;
+    background: #ffd98a; border: 1px solid #0a0f22; flex-shrink: 0;
+  }
+  .gb-hero-body{ flex: 1; min-width: 0 }
+  .gb-hero-label{
+    font-size: 11px; text-transform: uppercase; letter-spacing: .06em;
+    color: #8b6a4a;
+  }
+  .gb-hero .gh-msg{
+    font-size: 16px; line-height: 1.3; color: #0a0f22;
+    overflow: hidden; text-overflow: ellipsis;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    word-break: break-word;
+  }
+  .gb-hero .gh-meta{
+    font-size: 12px; color: #8b6a4a; margin-top: 1px;
+  }
+  .gb-hero-actions{ display: flex; gap: 6px; flex-shrink: 0 }
+  @media (max-width: 720px){
+    .gb-hero{ flex-wrap: wrap }
+    .gb-hero-actions{ width: 100%; justify-content: flex-end }
+  }
+
+  /* ── Guestbook modal ───────────────────────────────────── */
   .guestbook-card{ max-width: 640px }
   .guestbook-intro{
     background: #f9efd5;
@@ -1945,6 +1982,64 @@
   .gb-loading, .gb-empty{
     font-family: 'VT323', monospace; font-size: 14px;
     color: #8b6a4a; text-align: center; padding: 12px;
+  }
+
+  /* ── Profile ──────────────────────────────────────────── */
+  .profile-card{ max-width: 920px }
+  .profile-connect{
+    padding: 16px;
+    background: #fff7e4;
+    border: 1px solid #d8a890;
+    text-align: center;
+    font-family: 'VT323', monospace;
+    font-size: 14px;
+    color: #4a3a2a;
+  }
+  .profile-connect p{ margin: 0 0 12px; line-height: 1.4 }
+  .profile-meta{
+    display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+    padding: 10px 12px; margin-bottom: 10px;
+    background: #fff7e4; border: 1px solid #d8a890;
+  }
+  .profile-meta-label{
+    font-family: 'VT323', monospace; font-size: 11px;
+    color: #8b6a4a; text-transform: uppercase; letter-spacing: .04em;
+  }
+  .profile-meta-addr{ font-family: 'VT323', monospace; font-size: 15px; color: #4a3a2a }
+  .profile-meta-count{ font-family: 'VT323', monospace; font-size: 18px; color: #0a0f22; font-weight: bold }
+  .profile-meta > button{ margin-left: auto }
+  .profile-download-status{
+    font-family: 'VT323', monospace; font-size: 13px; color: #4a3a2a;
+    background: #fffaec; border: 1px solid #d8a890;
+    padding: 6px 8px; margin: 0 0 8px;
+  }
+  .profile-grid{
+    display: grid; gap: 10px;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  }
+  .profile-nft{
+    background: #fffaec; border: 1px solid #d8a890;
+    padding: 8px; display: flex; flex-direction: column; gap: 6px;
+    box-shadow: 1px 1px 0 rgba(10,15,34,.1);
+  }
+  .profile-nft img, .profile-nft-img-placeholder{
+    width: 100%; aspect-ratio: 1/1; object-fit: cover;
+    background: #f0e5cf; image-rendering: auto;
+    border: 1px solid #b89a78;
+  }
+  .profile-nft-name{
+    font-family: 'VT323', monospace; font-size: 14px;
+    color: #0a0f22; font-weight: bold;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .profile-nft-meta{
+    font-family: 'VT323', monospace; font-size: 11px;
+    color: #8b6a4a; line-height: 1.3;
+  }
+  .profile-nft-meta a{ color: #8b3a1e; text-decoration: underline }
+  @media (max-width: 720px){
+    .profile-grid{ grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)) }
+    .profile-meta > button{ margin-left: 0; width: 100% }
   }
 
   /* XP maximize state */
@@ -3203,16 +3298,13 @@
         <path d="M15 20c0-2 1.5-3.5 4-3.5s2 1.5 2 3.5"/>
       </svg>
     </button>
-    <button class="header-btn" id="guestbook-btn" type="button" aria-label="Guestbook" title="Guestbook — holders only">
+    <button class="header-btn" id="profile-btn" type="button" aria-label="Profile" title="Profile — holders only">
       <svg width="22" height="22" viewBox="0 0 10 10" shape-rendering="crispEdges" aria-hidden="true">
         <g fill="currentColor">
-          <rect x="1" y="1" width="8" height="1"/>
-          <rect x="1" y="1" width="1" height="8"/>
-          <rect x="8" y="1" width="1" height="8"/>
-          <rect x="1" y="8" width="8" height="1"/>
-          <rect x="3" y="3" width="4" height="1"/>
-          <rect x="3" y="5" width="4" height="1"/>
-          <rect x="3" y="7" width="3" height="1"/>
+          <rect x="3" y="1" width="4" height="1"/>
+          <rect x="2" y="2" width="6" height="2"/>
+          <rect x="3" y="4" width="4" height="1"/>
+          <rect x="1" y="6" width="8" height="3"/>
         </g>
       </svg>
     </button>
@@ -3228,6 +3320,32 @@
 
   <div class="main">
     <div style="display:flex; flex-direction:column; gap:16px">
+
+      <!-- Guestbook hero strip — latest entry, always visible -->
+      <div class="gb-hero" id="guestbook-hero" role="region" aria-label="Guestbook">
+        <div class="gb-hero-icon" aria-hidden="true">
+          <svg viewBox="0 0 10 10" shape-rendering="crispEdges" width="22" height="22">
+            <g fill="#0a0f22">
+              <rect x="1" y="1" width="8" height="1"/>
+              <rect x="1" y="1" width="1" height="8"/>
+              <rect x="8" y="1" width="1" height="8"/>
+              <rect x="1" y="8" width="8" height="1"/>
+              <rect x="3" y="3" width="4" height="1"/>
+              <rect x="3" y="5" width="4" height="1"/>
+              <rect x="3" y="7" width="3" height="1"/>
+            </g>
+          </svg>
+        </div>
+        <div class="gb-hero-body">
+          <div class="gb-hero-label">latest from the guestbook</div>
+          <div class="gh-msg">loading…</div>
+          <div class="gh-meta"></div>
+        </div>
+        <div class="gb-hero-actions">
+          <button class="gb-btn gb-btn-primary" id="guestbook-hero-sign" type="button">✍ Sign</button>
+          <button class="gb-btn" id="guestbook-hero-see-all" type="button">see all →</button>
+        </div>
+      </div>
 
       <div class="hero g-deep">
         <div>
@@ -3574,6 +3692,71 @@
     <div class="xp-statusbar">
       <span class="xp-status-cell" id="gb-status-cell">ready</span>
       <span class="xp-status-cell xp-status-right" id="gb-total">— entries</span>
+    </div>
+  </div>
+</div>
+
+<!-- Profile modal (XP-style window, holder-gated via nftroles) -->
+<div class="thread-modal" id="profile-modal" aria-hidden="true">
+  <div class="xp-window members-card profile-card" role="dialog" aria-modal="true">
+    <div class="xp-titlebar">
+      <div class="xp-title">
+        <span class="xp-icon" aria-hidden="true">
+          <svg viewBox="0 0 10 10" shape-rendering="crispEdges" width="16" height="16">
+            <g fill="#ffd98a"><rect x="2" y="1" width="6" height="8"/></g>
+            <g fill="#0a0f22">
+              <rect x="3" y="1" width="4" height="1"/>
+              <rect x="2" y="2" width="6" height="2"/>
+              <rect x="3" y="4" width="4" height="1"/>
+              <rect x="1" y="6" width="8" height="3"/>
+            </g>
+          </svg>
+        </span>
+        Profile
+      </div>
+      <div class="xp-buttons">
+        <button class="xp-btn xp-min" type="button" aria-label="Minimize">_</button>
+        <button class="xp-btn xp-max" type="button" aria-label="Maximize">◻</button>
+        <button class="xp-btn xp-close" id="profile-close" type="button" aria-label="Close">×</button>
+      </div>
+    </div>
+    <div class="xp-body">
+
+      <!-- Connect prompt (shown when not verified) -->
+      <div class="profile-connect" id="profile-connect">
+        <p>Connect a wallet that holds a <strong>Yume</strong> NFT to see your collection and download every artwork in high resolution.</p>
+        <button class="gb-btn gb-btn-primary" id="profile-verify-btn" type="button">✦ Connect wallet</button>
+        <p class="gb-hint" style="margin-top:6px">verification handled by <a href="https://nftroles.xyz" target="_blank" rel="noopener">nftroles.xyz</a> — sign only, no transaction.</p>
+      </div>
+
+      <!-- Loading state -->
+      <div class="profile-loading" id="profile-loading" hidden>
+        <div class="gb-loading">fetching your yume…</div>
+      </div>
+
+      <!-- Verified — NFT grid -->
+      <div class="profile-content" id="profile-content" hidden>
+        <div class="profile-meta">
+          <div>
+            <div class="profile-meta-label">connected</div>
+            <div class="profile-meta-addr" id="profile-addr">—</div>
+          </div>
+          <div>
+            <div class="profile-meta-label">yume held</div>
+            <div class="profile-meta-count" id="profile-count">—</div>
+          </div>
+          <button class="gb-btn gb-btn-primary" id="profile-download-all" type="button">⬇ Download all (high-res)</button>
+        </div>
+        <p class="profile-download-status" id="profile-download-status" hidden></p>
+        <div class="profile-grid" id="profile-grid"></div>
+      </div>
+
+      <!-- Error -->
+      <p class="gb-error" id="profile-error" hidden></p>
+    </div>
+    <div class="xp-statusbar">
+      <span class="xp-status-cell" id="profile-status-cell">ready</span>
+      <span class="xp-status-cell xp-status-right">yume-os98</span>
     </div>
   </div>
 </div>
@@ -4517,7 +4700,8 @@
         if($('#video-lightbox').classList.contains('open')) closeVideoLightbox();
         else if($('#lightbox').classList.contains('open')) closeLightbox();
         else if($('#gallery-modal').classList.contains('open')) closeGallery();
-        else if($('#guestbook-modal').classList.contains('open')) closeGuestbook();
+        else if($('#profile-modal').classList.contains('open')) closeProfileModal();
+        else if($('#guestbook-modal').classList.contains('open')) closeGuestbookModal();
         else if($('#about-modal').classList.contains('open')) closeAbout();
         else if($('#members-modal').classList.contains('open')) closeMembers();
         else closeThread();
@@ -4629,40 +4813,133 @@
       mt = setTimeout(() => renderMembersModal(e.target.value), 100);
     });
 
-    // ── Guestbook wiring ────────────────────────────────────
-    initGuestbook();
+    // ── Holder-gated features wiring ────────────────────────
+    initHolderFeatures();
   }
 
-  // ── Guestbook ────────────────────────────────────────────
-  const guestbookState = { token: null, address: null, popup: null, loaded: false };
+  // ─────────────────────────────────────────────────────────
+  // Shared verify state — token usable for both guestbook + profile
+  // ─────────────────────────────────────────────────────────
+  const verifyState = { token: null, address: null, expiresAt: 0, popup: null };
+  const NFTROLES_ORIGIN = 'https://nftroles.xyz';
+  const SS_TOKEN = 'yumeVerifyToken';
+  const SS_ADDR = 'yumeVerifyAddress';
+  const SS_EXP = 'yumeVerifyExp';
+  const SS_INTENT = 'yumeVerifyIntent';
 
-  function openGuestbook(){
-    document.body.style.overflow = 'hidden';
-    $('#guestbook-modal').classList.add('open');
-    $('#guestbook-modal').setAttribute('aria-hidden','false');
-    if(!guestbookState.loaded) loadGuestbookEntries();
+  function gbEscape(s){
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   }
-  function closeGuestbook(){
-    $('#guestbook-modal').classList.remove('open');
-    $('#guestbook-modal').setAttribute('aria-hidden','true');
-    if(!$('#members-modal').classList.contains('open') &&
-       !$('#about-modal').classList.contains('open') &&
-       !$('#gallery-modal')?.classList.contains('open')){
-      document.body.style.overflow = '';
-    }
-  }
-
   function gbRelTime(iso){
-    const d = new Date(iso); const now = Date.now(); const s = Math.max(0,(now - d.getTime())/1000);
+    const d = new Date(iso); const s = Math.max(0,(Date.now() - d.getTime())/1000);
     if(s < 60) return 'just now';
     if(s < 3600) return Math.floor(s/60) + 'm ago';
     if(s < 86400) return Math.floor(s/3600) + 'h ago';
     if(s < 86400*30) return Math.floor(s/86400) + 'd ago';
     return d.toISOString().slice(0,10);
   }
+  function shortAddr(a){ return a ? a.slice(0,6) + '…' + a.slice(-4) : '0x?'; }
+  function gbIsMobile(){
+    return (window.matchMedia && window.matchMedia('(max-width: 720px)').matches)
+      || ('ontouchstart' in window && window.innerWidth < 800);
+  }
 
-  function gbEscape(s){
-    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  function loadVerifyState(){
+    try{
+      verifyState.token = sessionStorage.getItem(SS_TOKEN);
+      verifyState.address = sessionStorage.getItem(SS_ADDR);
+      verifyState.expiresAt = Number(sessionStorage.getItem(SS_EXP) || 0);
+    } catch (_){ /* ignore */ }
+    if(verifyState.expiresAt && Date.now() > verifyState.expiresAt) clearVerifyState();
+  }
+  function saveVerifyState(token, address){
+    verifyState.token = token;
+    verifyState.address = (address || '').toLowerCase();
+    // Tokens are 24h; leave a buffer.
+    verifyState.expiresAt = Date.now() + 23 * 60 * 60 * 1000;
+    try{
+      sessionStorage.setItem(SS_TOKEN, verifyState.token);
+      sessionStorage.setItem(SS_ADDR, verifyState.address);
+      sessionStorage.setItem(SS_EXP, String(verifyState.expiresAt));
+    } catch (_){ /* ignore */ }
+  }
+  function clearVerifyState(){
+    verifyState.token = null; verifyState.address = null; verifyState.expiresAt = 0;
+    try{
+      sessionStorage.removeItem(SS_TOKEN);
+      sessionStorage.removeItem(SS_ADDR);
+      sessionStorage.removeItem(SS_EXP);
+    } catch (_){ /* ignore */ }
+  }
+  function isVerified(){ return Boolean(verifyState.token) && Date.now() < verifyState.expiresAt; }
+
+  // intent: 'profile' | 'guestbook'
+  function openVerifyFlow(intent){
+    const returnTo = window.location.origin + window.location.pathname + '?yumeVerified=' + intent;
+    const url = NFTROLES_ORIGIN + '/verify/yume?return_to=' + encodeURIComponent(returnTo);
+    try{ sessionStorage.setItem(SS_INTENT, intent); } catch (_){ /* ignore */ }
+    if(gbIsMobile()){
+      window.location.href = url;
+      return;
+    }
+    const w = 460, h = 680;
+    const left = Math.round((window.outerWidth - w) / 2 + (window.screenX || 0));
+    const top = Math.round((window.outerHeight - h) / 2 + (window.screenY || 0));
+    const features = `width=${w},height=${h},left=${left},top=${top},menubar=no,toolbar=no,location=yes`;
+    verifyState.popup = window.open(url, 'yume-verify', features);
+    if(!verifyState.popup){ window.location.href = url; }
+  }
+
+  function onVerifyMessage(ev){
+    if(ev.origin !== NFTROLES_ORIGIN) return;
+    const data = ev.data;
+    if(!data || data.type !== 'yume-verify:success') return;
+    if(typeof data.token !== 'string') return;
+    saveVerifyState(data.token, data.address);
+    try{ verifyState.popup && verifyState.popup.close(); } catch (_){ /* ignore */ }
+    let intent = 'guestbook';
+    try{ intent = sessionStorage.getItem(SS_INTENT) || 'guestbook'; sessionStorage.removeItem(SS_INTENT); } catch (_){ /* ignore */ }
+    resumeAfterVerify(intent);
+  }
+
+  function consumeReturnFragment(){
+    if(!window.location.hash) return null;
+    const params = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+    const token = params.get('yume-token');
+    const address = params.get('yume-address');
+    if(!token) return null;
+    saveVerifyState(token, address);
+    try{
+      const clean = window.location.pathname + window.location.search;
+      window.history.replaceState({}, document.title, clean);
+    } catch (_){ /* ignore */ }
+    return true;
+  }
+
+  function resumeAfterVerify(intent){
+    if(intent === 'profile') openProfileModal();
+    else { openGuestbookModal(); enterGuestbookCompose(); }
+  }
+
+  // ─────────────────────────────────────────────────────────
+  // Guestbook
+  // ─────────────────────────────────────────────────────────
+  const guestbookState = { loaded: false, latest: null };
+
+  function openGuestbookModal(){
+    document.body.style.overflow = 'hidden';
+    $('#guestbook-modal').classList.add('open');
+    $('#guestbook-modal').setAttribute('aria-hidden','false');
+    if(!guestbookState.loaded) loadGuestbookEntries();
+  }
+  function closeGuestbookModal(){
+    $('#guestbook-modal').classList.remove('open');
+    $('#guestbook-modal').setAttribute('aria-hidden','true');
+    if(!anyModalOpen()) document.body.style.overflow = '';
+  }
+  function anyModalOpen(){
+    return ['#members-modal','#about-modal','#gallery-modal','#guestbook-modal','#profile-modal','#thread-modal','#lightbox','#video-lightbox']
+      .some(sel => $(sel)?.classList.contains('open'));
   }
 
   function renderGuestbookEntries(entries, total){
@@ -4673,7 +4950,7 @@
       list.innerHTML = entries.map(e =>
         '<div class="gb-entry">' +
           '<div class="gb-entry-head">' +
-            '<span class="gb-entry-addr">' + gbEscape(e.addressShort || (e.address ? e.address.slice(0,6)+'…'+e.address.slice(-4) : '0x?')) + '</span>' +
+            '<span class="gb-entry-addr">' + gbEscape(e.addressShort || shortAddr(e.address)) + '</span>' +
             '<span class="gb-entry-time">' + gbEscape(gbRelTime(e.ts)) + '</span>' +
           '</div>' +
           '<div class="gb-entry-msg">' + gbEscape(e.message) + '</div>' +
@@ -4681,6 +4958,10 @@
       ).join('');
     }
     $('#gb-total').textContent = (total ?? entries.length) + ' entries';
+    if(entries.length){
+      guestbookState.latest = entries[0];
+      renderGuestbookHero(entries[0]);
+    }
   }
 
   async function loadGuestbookEntries(){
@@ -4698,112 +4979,23 @@
     }
   }
 
-  function gbIsMobile(){
-    return (window.matchMedia && window.matchMedia('(max-width: 720px)').matches)
-      || ('ontouchstart' in window && window.innerWidth < 800);
-  }
-
-  function openVerifyPopup(){
-    const returnTo = window.location.origin + window.location.pathname + '?guestbook=1';
-    const url = 'https://nftroles.xyz/verify/yume?return_to=' + encodeURIComponent(returnTo);
-    if(gbIsMobile()){
-      // On mobile, popups become foreign tabs with no opener — use a
-      // same-tab redirect and rely on the return_to fragment to resume.
-      try{ sessionStorage.setItem('guestbookPending', '1'); } catch (_){ /* ignore */ }
-      window.location.href = url;
-      return;
-    }
-    const w = 460, h = 640;
-    const left = Math.round((window.outerWidth - w) / 2 + (window.screenX || 0));
-    const top = Math.round((window.outerHeight - h) / 2 + (window.screenY || 0));
-    const features = `width=${w},height=${h},left=${left},top=${top},menubar=no,toolbar=no,location=yes`;
-    guestbookState.popup = window.open(url, 'yume-verify', features);
-    if(!guestbookState.popup){
-      // Popup blocked → fall back to same-tab redirect.
-      try{ sessionStorage.setItem('guestbookPending', '1'); } catch (_){ /* ignore */ }
-      window.location.href = url;
-      return;
-    }
-    $('#gb-status-cell').textContent = 'waiting for verify…';
-  }
-
-  function consumeReturnFragment(){
-    // Token may arrive in the URL hash (#yume-token=...&yume-address=...)
-    // after a same-tab verify redirect.
-    if(!window.location.hash) return false;
-    const params = new URLSearchParams(window.location.hash.replace(/^#/, ''));
-    const token = params.get('yume-token');
-    const address = params.get('yume-address');
-    if(!token) return false;
-    guestbookState.token = token;
-    guestbookState.address = (address || '').toLowerCase();
-    // Clean the URL so the token isn't preserved in history / shared links.
-    try{
-      const clean = window.location.pathname + window.location.search;
-      window.history.replaceState({}, document.title, clean);
-    } catch (_){ /* ignore */ }
-    return true;
-  }
-
-  function resumeGuestbookIfPending(){
-    const had = consumeReturnFragment();
-    const qsPending = new URLSearchParams(window.location.search).get('guestbook');
-    let pending = false;
-    try{
-      pending = sessionStorage.getItem('guestbookPending') === '1';
-      if(pending) sessionStorage.removeItem('guestbookPending');
-    } catch (_){ /* ignore */ }
-    if(had || pending || qsPending){
-      openGuestbook();
-      if(had){
-        $('#gb-status-cell').textContent = 'verified';
-        $('#guestbook-sign').hidden = true;
-        $('#guestbook-compose').hidden = false;
-        const a = guestbookState.address;
-        $('#guestbook-verified-addr').textContent = a ? a.slice(0,6) + '…' + a.slice(-4) : 'verified';
-        setTimeout(() => $('#guestbook-textarea')?.focus(), 100);
-      }
-    }
-    if(qsPending){
-      // Strip the ?guestbook=1 from the URL for cleanliness.
-      try{
-        const url = new URL(window.location.href);
-        url.searchParams.delete('guestbook');
-        window.history.replaceState({}, document.title, url.pathname + (url.search || '') + url.hash);
-      } catch (_){ /* ignore */ }
-    }
-  }
-
-  function onVerifyMessage(ev){
-    if(ev.origin !== 'https://nftroles.xyz') return;
-    const data = ev.data;
-    if(!data || data.type !== 'yume-verify:success') return;
-    if(typeof data.token !== 'string') return;
-    guestbookState.token = data.token;
-    guestbookState.address = String(data.address || '').toLowerCase();
-    $('#gb-status-cell').textContent = 'verified';
+  function enterGuestbookCompose(){
+    openGuestbookModal();
     $('#guestbook-sign').hidden = true;
     $('#guestbook-compose').hidden = false;
-    const a = guestbookState.address;
-    $('#guestbook-verified-addr').textContent = a ? a.slice(0,6) + '…' + a.slice(-4) : 'verified';
-    try{ guestbookState.popup && guestbookState.popup.close(); } catch (_){ /* ignore */ }
-    $('#guestbook-textarea').focus();
+    $('#guestbook-verified-addr').textContent = shortAddr(verifyState.address || '');
+    $('#gb-status-cell').textContent = 'verified';
+    setTimeout(() => $('#guestbook-textarea')?.focus(), 100);
   }
 
-  function gbShowError(msg){
-    const el = $('#guestbook-error');
-    el.textContent = msg;
-    el.hidden = false;
-  }
-  function gbClearError(){ $('#guestbook-error').hidden = true }
+  function gbShowError(msg){ const el = $('#guestbook-error'); el.textContent = msg; el.hidden = false; }
+  function gbClearError(){ $('#guestbook-error').hidden = true; }
 
   function gbResetCompose(){
     $('#guestbook-compose').hidden = true;
     $('#guestbook-sign').hidden = false;
     $('#guestbook-textarea').value = '';
     $('#guestbook-counter').textContent = '0/280';
-    guestbookState.token = null;
-    guestbookState.address = null;
     gbClearError();
     $('#gb-status-cell').textContent = 'ready';
   }
@@ -4812,7 +5004,7 @@
     gbClearError();
     const message = $('#guestbook-textarea').value;
     if(!message.trim()){ gbShowError('write a message first.'); return; }
-    if(!guestbookState.token){ gbShowError('verification expired — sign again.'); return; }
+    if(!isVerified()){ gbShowError('verification expired — sign again.'); gbResetCompose(); return; }
     const submitBtn = $('#guestbook-submit');
     submitBtn.disabled = true; submitBtn.textContent = 'posting…';
     $('#gb-status-cell').textContent = 'posting…';
@@ -4820,7 +5012,7 @@
       const r = await fetch('/api/guestbook', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: guestbookState.token, message }),
+        body: JSON.stringify({ token: verifyState.token, message }),
       });
       const data = await r.json().catch(() => ({}));
       if(!r.ok){ gbShowError(data.error || ('failed (' + r.status + ')')); $('#gb-status-cell').textContent = 'error'; return; }
@@ -4834,25 +5026,256 @@
     }
   }
 
-  function initGuestbook(){
-    $('#guestbook-btn')?.addEventListener('click', openGuestbook);
-    $('#guestbook-close')?.addEventListener('click', closeGuestbook);
+  function renderGuestbookHero(entry){
+    const hero = $('#guestbook-hero');
+    if(!hero) return;
+    if(!entry){
+      hero.querySelector('.gh-msg').textContent = 'be the first to sign the guestbook ✦';
+      hero.querySelector('.gh-meta').textContent = '';
+      return;
+    }
+    hero.querySelector('.gh-msg').textContent = entry.message;
+    hero.querySelector('.gh-meta').textContent =
+      (entry.addressShort || shortAddr(entry.address)) + ' • ' + gbRelTime(entry.ts);
+  }
+
+  function onGuestbookSignClick(){
+    if(isVerified()) enterGuestbookCompose();
+    else openVerifyFlow('guestbook');
+  }
+
+  // ─────────────────────────────────────────────────────────
+  // Profile
+  // ─────────────────────────────────────────────────────────
+  const profileState = { loaded: false, nfts: [], downloading: false };
+
+  function openProfileModal(){
+    document.body.style.overflow = 'hidden';
+    $('#profile-modal').classList.add('open');
+    $('#profile-modal').setAttribute('aria-hidden','false');
+    refreshProfileView();
+  }
+  function closeProfileModal(){
+    $('#profile-modal').classList.remove('open');
+    $('#profile-modal').setAttribute('aria-hidden','true');
+    if(!anyModalOpen()) document.body.style.overflow = '';
+  }
+
+  function refreshProfileView(){
+    const verified = isVerified();
+    $('#profile-connect').hidden = verified;
+    $('#profile-loading').hidden = true;
+    $('#profile-content').hidden = !verified || !profileState.loaded;
+    $('#profile-error').hidden = true;
+    if(verified && !profileState.loaded) loadProfile();
+  }
+
+  function onProfileBtnClick(){
+    if(isVerified()) openProfileModal();
+    else openVerifyFlow('profile');
+  }
+
+  async function loadProfile(){
+    if(!isVerified()) return;
+    $('#profile-loading').hidden = false;
+    $('#profile-content').hidden = true;
+    $('#profile-status-cell').textContent = 'fetching…';
+    $('#profile-error').hidden = true;
+    try{
+      const r = await fetch(NFTROLES_ORIGIN + '/api/public/holder/profile?token=' + encodeURIComponent(verifyState.token), { cache: 'no-store' });
+      const data = await r.json().catch(() => ({}));
+      if(!r.ok) throw new Error(data.error || ('failed (' + r.status + ')'));
+      profileState.nfts = data.nfts || [];
+      profileState.loaded = true;
+      renderProfile(data);
+      $('#profile-loading').hidden = true;
+      $('#profile-content').hidden = false;
+      $('#profile-status-cell').textContent = 'ready';
+    } catch (e){
+      $('#profile-loading').hidden = true;
+      const err = $('#profile-error');
+      err.textContent = 'couldn\'t fetch your profile: ' + (e && e.message);
+      err.hidden = false;
+      $('#profile-status-cell').textContent = 'error';
+    }
+  }
+
+  function renderProfile(data){
+    $('#profile-addr').textContent = shortAddr(data.address || verifyState.address);
+    $('#profile-count').textContent = String(data.count ?? (data.nfts || []).length);
+    const grid = $('#profile-grid');
+    const nfts = data.nfts || [];
+    if(!nfts.length){
+      grid.innerHTML = '<div class="gb-empty">no yume found in this wallet.</div>';
+      $('#profile-download-all').disabled = true;
+      return;
+    }
+    grid.innerHTML = nfts.map(n => {
+      const img = n.image || n.imageOriginal || '';
+      const acquired = n.acquiredAt ? gbRelTime(n.acquiredAt) : 'unknown';
+      const name = n.name || ('Yume #' + n.tokenId);
+      const tokenLink = 'https://opensea.io/assets/ethereum/0x7011ee079f579eb313012bddb92fd6f06fa43335/' + encodeURIComponent(n.tokenId);
+      return (
+        '<div class="profile-nft" data-token-id="' + gbEscape(n.tokenId) + '">' +
+          (img ? '<img loading="lazy" src="' + gbEscape(img) + '" alt="' + gbEscape(name) + '" />' : '<div class="profile-nft-img-placeholder"></div>') +
+          '<div class="profile-nft-name">' + gbEscape(name) + '</div>' +
+          '<div class="profile-nft-meta">' +
+            '#' + gbEscape(n.tokenId) + ' · ' +
+            (n.acquiredAt ? 'acquired ' + gbEscape(acquired) : 'acquired unknown') +
+            ' · <a href="' + gbEscape(tokenLink) + '" target="_blank" rel="noopener">opensea</a>' +
+          '</div>' +
+        '</div>'
+      );
+    }).join('');
+    $('#profile-download-all').disabled = false;
+  }
+
+  async function loadJsZip(){
+    if(window.JSZip) return window.JSZip;
+    await new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js';
+      s.async = true;
+      s.onload = resolve;
+      s.onerror = () => reject(new Error('failed to load jszip'));
+      document.head.appendChild(s);
+    });
+    return window.JSZip;
+  }
+
+  function profileDownloadStatus(msg){
+    const el = $('#profile-download-status');
+    if(!msg){ el.hidden = true; el.textContent = ''; return; }
+    el.hidden = false; el.textContent = msg;
+  }
+
+  async function downloadAllProfile(){
+    if(profileState.downloading) return;
+    if(!profileState.nfts.length) return;
+    profileState.downloading = true;
+    const btn = $('#profile-download-all');
+    btn.disabled = true;
+    const orig = btn.textContent;
+    try{
+      profileDownloadStatus('loading zip library…');
+      const JSZip = await loadJsZip();
+      const zip = new JSZip();
+      const items = profileState.nfts.slice();
+      let done = 0;
+      const total = items.length;
+      // Limited concurrency to avoid IPFS rate limits.
+      const QUEUE = items.slice();
+      const workers = Array.from({ length: Math.min(4, total) }, async () => {
+        while(QUEUE.length){
+          const n = QUEUE.shift();
+          if(!n) break;
+          const url = n.imageOriginal || n.image;
+          if(!url){ done++; continue; }
+          try{
+            const r = await fetch(url, { cache: 'force-cache' });
+            if(!r.ok) throw new Error('http ' + r.status);
+            const blob = await r.blob();
+            const ext = (() => {
+              const u = url.split('?')[0].toLowerCase();
+              const m = u.match(/\.(jpg|jpeg|png|gif|webp|svg|mp4|gltf|glb)$/);
+              if(m) return m[1];
+              const ct = blob.type || '';
+              if(ct.includes('png')) return 'png';
+              if(ct.includes('webp')) return 'webp';
+              if(ct.includes('gif')) return 'gif';
+              if(ct.includes('svg')) return 'svg';
+              return 'jpg';
+            })();
+            const safeName = (n.name || ('yume-' + n.tokenId)).replace(/[^a-zA-Z0-9._-]+/g, '_').slice(0, 80);
+            zip.file(safeName + '_' + n.tokenId + '.' + ext, blob);
+          } catch (e){
+            // Skip; continue.
+            zip.file('errors.log', (zip.files['errors.log']?._data ? '' : '') + '#' + n.tokenId + ': ' + (e && e.message) + '\n', { binary: false });
+          }
+          done++;
+          btn.textContent = 'downloading ' + done + '/' + total + '…';
+        }
+      });
+      await Promise.all(workers);
+      profileDownloadStatus('packaging zip…');
+      const archive = await zip.generateAsync({ type: 'blob' });
+      const a = document.createElement('a');
+      const addr = (verifyState.address || 'yume').slice(0, 10);
+      a.href = URL.createObjectURL(archive);
+      a.download = 'yume-' + addr + '-' + new Date().toISOString().slice(0,10) + '.zip';
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(a.href), 60_000);
+      profileDownloadStatus('downloaded ' + done + ' of ' + total + ' files.');
+    } catch (e){
+      profileDownloadStatus('download failed: ' + (e && e.message));
+    } finally {
+      btn.disabled = false; btn.textContent = orig;
+      profileState.downloading = false;
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────
+  // Wiring
+  // ─────────────────────────────────────────────────────────
+  function initHolderFeatures(){
+    loadVerifyState();
+
+    // Guestbook modal
+    $('#guestbook-close')?.addEventListener('click', closeGuestbookModal);
     $('#guestbook-modal')?.addEventListener('click', e => {
-      if(e.target.id === 'guestbook-modal') closeGuestbook();
+      if(e.target.id === 'guestbook-modal') closeGuestbookModal();
     });
     $('#guestbook-modal .xp-max')?.addEventListener('click', () => {
       document.querySelector('.guestbook-card')?.classList.toggle('xp-maximized');
     });
-    $('#guestbook-modal .xp-min')?.addEventListener('click', closeGuestbook);
-    $('#guestbook-verify-btn')?.addEventListener('click', openVerifyPopup);
+    $('#guestbook-modal .xp-min')?.addEventListener('click', closeGuestbookModal);
+    $('#guestbook-verify-btn')?.addEventListener('click', onGuestbookSignClick);
     $('#guestbook-cancel')?.addEventListener('click', gbResetCompose);
     $('#guestbook-submit')?.addEventListener('click', submitGuestbookEntry);
     $('#guestbook-textarea')?.addEventListener('input', e => {
-      $('#guestbook-counter').textContent = (e.target.value.length) + '/280';
+      $('#guestbook-counter').textContent = e.target.value.length + '/280';
     });
+
+    // Profile modal
+    $('#profile-btn')?.addEventListener('click', onProfileBtnClick);
+    $('#profile-close')?.addEventListener('click', closeProfileModal);
+    $('#profile-modal')?.addEventListener('click', e => {
+      if(e.target.id === 'profile-modal') closeProfileModal();
+    });
+    $('#profile-modal .xp-max')?.addEventListener('click', () => {
+      document.querySelector('.profile-card')?.classList.toggle('xp-maximized');
+    });
+    $('#profile-modal .xp-min')?.addEventListener('click', closeProfileModal);
+    $('#profile-verify-btn')?.addEventListener('click', () => openVerifyFlow('profile'));
+    $('#profile-download-all')?.addEventListener('click', downloadAllProfile);
+
+    // Guestbook hero strip
+    $('#guestbook-hero-sign')?.addEventListener('click', onGuestbookSignClick);
+    $('#guestbook-hero-see-all')?.addEventListener('click', openGuestbookModal);
+
     window.addEventListener('message', onVerifyMessage);
-    // After a same-tab verify redirect (mobile fallback), resume the flow.
-    resumeGuestbookIfPending();
+
+    // Resume after same-tab redirect.
+    const hadFragment = consumeReturnFragment();
+    const qsIntent = new URLSearchParams(window.location.search).get('yumeVerified');
+    let pendingIntent = null;
+    try{
+      pendingIntent = sessionStorage.getItem(SS_INTENT);
+      if(pendingIntent) sessionStorage.removeItem(SS_INTENT);
+    } catch (_){ /* ignore */ }
+    if(hadFragment){
+      resumeAfterVerify(qsIntent || pendingIntent || 'guestbook');
+    }
+    if(qsIntent){
+      try{
+        const url = new URL(window.location.href);
+        url.searchParams.delete('yumeVerified');
+        window.history.replaceState({}, document.title, url.pathname + (url.search || '') + url.hash);
+      } catch (_){ /* ignore */ }
+    }
+
+    // Always render the hero strip + load latest entry in background.
+    loadGuestbookEntries();
   }
 
   async function load(){
