@@ -23,7 +23,10 @@ const ALLOWED_MEDIA_TYPES = new Set([
 function isAllowedBlobUrl(u) {
   try {
     const url = new URL(u);
-    return url.protocol === 'https:' && /\.public\.blob\.vercel-storage\.com$/.test(url.host);
+    if (url.protocol !== 'https:') return false;
+    return /\.public\.blob\.vercel-storage\.com$/.test(url.host)
+        || /\.blob\.vercel-storage\.com$/.test(url.host)
+        || url.host.endsWith('.vercel-storage.com');
   } catch { return false; }
 }
 

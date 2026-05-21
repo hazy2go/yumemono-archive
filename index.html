@@ -3784,7 +3784,7 @@
         <textarea id="guestbook-textarea" maxlength="280" placeholder="Leave a message… (max 280 chars)"></textarea>
         <div class="gb-media-tray" id="guestbook-media-tray"></div>
         <div class="gb-compose-row">
-          <label class="gb-btn gb-attach-btn" for="guestbook-file-input" title="Attach image, gif, or video (max 50MB, up to 4 files)">
+          <label class="gb-btn gb-attach-btn" for="guestbook-file-input" title="Attach image, gif, or short video (max 4MB, up to 4 files)">
             <span aria-hidden="true">📎</span> attach
           </label>
           <input type="file" id="guestbook-file-input" accept="image/*,video/*" multiple style="display:none" />
@@ -5173,35 +5173,36 @@
 
   // ── Compose media uploads (Vercel Blob, client-direct) ──
   const MAX_MEDIA_PER_ENTRY = 4;
-  const MAX_MEDIA_BYTES = 50 * 1024 * 1024;
+  const MAX_MEDIA_BYTES = 4 * 1024 * 1024;
   const ALLOWED_MEDIA_TYPES = new Set([
     'image/jpeg','image/png','image/gif','image/webp','image/avif',
     'video/mp4','video/webm','video/quicktime',
   ]);
   const composeMedia = [];
 
-  // Thin wrapper around @vercel/blob/client.upload (bundled at /vendor/blob-client.js).
+  // Server-proxied upload (Vercel function has a 4.5MB body limit, so files
+  // larger than 4MB are rejected). XHR is used for the upload-progress event.
   async function blobClientUpload(pathname, file, { contentType, clientPayload, handleUploadUrl, onProgress }) {
-    // The bundled SDK exposes window.VercelBlobClient.upload.
-    // Wait a tick if the defer'd script hasn't finished yet.
-    for (let i = 0; i < 50 && !window.VercelBlobClient; i++) {
-      await new Promise(r => setTimeout(r, 50));
-    }
-    if (!window.VercelBlobClient) throw new Error('upload library failed to load');
-    return window.VercelBlobClient.upload(pathname, file, {
-      access: 'public',
-      handleUploadUrl,
-      clientPayload,
-      contentType,
-      onUploadProgress: (e) => {
-        // v2 fires with { loaded, total, percentage }.
-        if (typeof onProgress === 'function') {
-          const pct = (e && typeof e.percentage === 'number')
-            ? e.percentage
-            : (e && e.total ? (e.loaded / e.total) * 100 : 0);
-          onProgress(pct);
+    let token = '';
+    try { token = JSON.parse(clientPayload || '{}').verifyToken || ''; } catch {}
+    return await new Promise((resolve, reject) => {
+      const form = new FormData();
+      form.append('token', token);
+      form.append('file', file, file.name || 'file');
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', handleUploadUrl, true);
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable && typeof onProgress === 'function') {
+          onProgress(Math.min(100, (e.loaded / e.total) * 100));
         }
-      },
+      };
+      xhr.onload = () => {
+        let data = {}; try { data = JSON.parse(xhr.responseText); } catch {}
+        if (xhr.status >= 200 && xhr.status < 300) resolve(data);
+        else reject(new Error(data.error || ('upload failed (' + xhr.status + ')')));
+      };
+      xhr.onerror = () => reject(new Error('network error'));
+      xhr.send(form);
     });
   }
 
@@ -5239,7 +5240,7 @@
         gbShowError('unsupported type: ' + (file.type || file.name)); continue;
       }
       if(file.size > MAX_MEDIA_BYTES){
-        gbShowError(file.name + ' is over 50MB.'); continue;
+        gbShowError(file.name + ' is over 4MB.'); continue;
       }
       const id = 'm' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
       const previewUrl = URL.createObjectURL(file);
