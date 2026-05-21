@@ -5216,7 +5216,7 @@
       const requestId = (storeId || 'store') + ':' + Date.now() + ':' + Math.random().toString(16).slice(2);
       xhr.open('PUT', url, true);
       xhr.setRequestHeader('Authorization', 'Bearer ' + clientToken);
-      xhr.setRequestHeader('x-api-version', '9');
+      xhr.setRequestHeader('x-api-version', '12');
       xhr.setRequestHeader('x-api-blob-request-id', requestId);
       xhr.setRequestHeader('x-api-blob-request-attempt', '0');
       xhr.setRequestHeader('x-content-length', String(file.size || 0));
