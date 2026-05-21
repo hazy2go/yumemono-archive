@@ -205,11 +205,14 @@ export default async function handler(req, res) {
   const address = String(verify.address).toLowerCase();
 
   const gateKey = `guestbook:rl:${address}`;
-  try {
-    const setRes = await kv('SET', gateKey, '1', 'NX', 'EX', RATE_LIMIT_SECONDS);
-    if (!setRes) { res.status(429).json({ error: 'already signed in the last 24h' }); return; }
-  } catch (e) {
-    res.status(500).json({ error: 'kv error' }); return;
+  const isAdmin = ADMIN_ADDRESSES.has(address);
+  if (!isAdmin) {
+    try {
+      const setRes = await kv('SET', gateKey, '1', 'NX', 'EX', RATE_LIMIT_SECONDS);
+      if (!setRes) { res.status(429).json({ error: 'already signed in the last 24h' }); return; }
+    } catch (e) {
+      res.status(500).json({ error: 'kv error' }); return;
+    }
   }
 
   const entry = {
@@ -225,7 +228,7 @@ export default async function handler(req, res) {
     await kv('LPUSH', LIST_KEY, JSON.stringify(entry));
     await kv('LTRIM', LIST_KEY, 0, MAX_ENTRIES - 1);
   } catch (e) {
-    await kv('DEL', gateKey).catch(() => {});
+    if (!isAdmin) await kv('DEL', gateKey).catch(() => {});
     res.status(500).json({ error: 'kv write failed' }); return;
   }
 
