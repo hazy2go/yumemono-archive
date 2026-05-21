@@ -5242,15 +5242,18 @@
         handleUploadUrl: '/api/blob-upload',
         clientPayload: JSON.stringify({ verifyToken: verifyState.token }),
         contentType: item.file.type,
-        onUploadProgress: (e) => {
-          if(e && typeof e.percentage === 'number'){
-            item.progress = e.percentage; renderComposeMedia();
-          }
+        // v0.27.x calls this with a `loaded` byte count.
+        onUploadProgress: (loaded) => {
+          const total = item.file.size || 0;
+          item.progress = total ? Math.min(100, (loaded / total) * 100) : 0;
+          renderComposeMedia();
         },
       });
+      console.log('[blob upload] complete', result);
       item.url = result.url; item.status = 'done';
       renderComposeMedia();
     } catch (e){
+      console.error('[blob upload] failed', e);
       item.status = 'error'; item.error = (e && e.message) || 'upload failed';
       renderComposeMedia();
     }
