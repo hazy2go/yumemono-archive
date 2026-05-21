@@ -1956,6 +1956,49 @@
   #guestbook-textarea:focus{ outline: none; border-color: #d8a890 }
   .gb-compose-row{ display: flex; align-items: center; gap: 8px; justify-content: flex-end }
   .gb-counter{ font-family: 'VT323', monospace; font-size: 13px; color: #8b6a4a; margin-right: auto }
+  .gb-attach-btn{ display: inline-flex; align-items: center; gap: 4px; cursor: pointer }
+  .gb-media-tray{
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 6px;
+  }
+  .gb-media-tray:empty{ display: none }
+  .gb-media-tray > .gb-media-pending{
+    position: relative;
+    aspect-ratio: 1/1;
+    background: #fffaec; border: 1px solid #d8a890;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+  }
+  .gb-media-pending img, .gb-media-pending video{
+    width: 100%; height: 100%; object-fit: cover; display: block;
+  }
+  .gb-media-pending .gb-media-progress{
+    position: absolute; inset: 0;
+    background: rgba(255,255,255,.75);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'VT323', monospace; font-size: 12px; color: #4a3a2a;
+  }
+  .gb-media-pending .gb-media-progress.done{ display: none }
+  .gb-media-pending .gb-media-remove{
+    position: absolute; top: 2px; right: 2px;
+    background: #b22a2a; color: #fff; border: 1px solid #0a0f22;
+    font-family: 'VT323', monospace; font-size: 11px;
+    padding: 0 5px; cursor: pointer; line-height: 1.2;
+  }
+  .gb-entry-media{
+    display: grid; gap: 4px; margin-top: 6px;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  }
+  .gb-entry-media a, .gb-entry-media video{
+    display: block; aspect-ratio: 1/1; overflow: hidden;
+    background: #f0e5cf; border: 1px solid #d8a890;
+  }
+  .gb-entry-media img, .gb-entry-media video{
+    width: 100%; height: 100%; object-fit: cover; display: block;
+  }
+  .gb-entry-media-single{ grid-template-columns: 1fr }
+  .gb-entry-media-single a, .gb-entry-media-single video{ aspect-ratio: auto; max-height: 420px }
+  .gb-entry-media-single img{ aspect-ratio: auto; max-height: 420px; object-fit: contain; background: #0a0f22 }
   .gb-error{
     font-family: 'VT323', monospace; font-size: 14px;
     color: #b22a2a; margin: 4px 0 0; padding: 4px 6px;
@@ -3737,7 +3780,12 @@
           <span class="gb-address" id="guestbook-verified-addr">—</span>
         </div>
         <textarea id="guestbook-textarea" maxlength="280" placeholder="Leave a message… (max 280 chars)"></textarea>
+        <div class="gb-media-tray" id="guestbook-media-tray"></div>
         <div class="gb-compose-row">
+          <label class="gb-btn gb-attach-btn" for="guestbook-file-input" title="Attach image, gif, or video (max 50MB, up to 4 files)">
+            <span aria-hidden="true">📎</span> attach
+          </label>
+          <input type="file" id="guestbook-file-input" accept="image/*,video/*" multiple style="display:none" />
           <span class="gb-counter" id="guestbook-counter">0/280</span>
           <button class="gb-btn gb-btn-cancel" id="guestbook-cancel" type="button">cancel</button>
           <button class="gb-btn gb-btn-primary" id="guestbook-submit" type="button">post</button>
@@ -5036,7 +5084,8 @@
                   ? '<button class="gb-entry-del" type="button" data-del="' + gbEscape(e.id) + '" title="Admin: delete entry">×</button>'
                   : '') +
               '</div>' +
-              '<div class="gb-entry-msg">' + gbEscape(e.message) + '</div>' +
+              (e.message ? '<div class="gb-entry-msg">' + gbEscape(e.message) + '</div>' : '') +
+              renderEntryMedia(e.media) +
             '</div>' +
           '</div>'
         );
@@ -5047,6 +5096,22 @@
       guestbookState.latest = entries[0];
       renderGuestbookHero(entries[0]);
     }
+  }
+
+  function renderEntryMedia(media){
+    if(!Array.isArray(media) || !media.length) return '';
+    const single = media.length === 1 ? ' gb-entry-media-single' : '';
+    const tiles = media.map(m => {
+      const url = m.url || '';
+      const ct = m.contentType || '';
+      if(ct.startsWith('video/')){
+        return '<video src="' + gbEscape(url) + '" controls preload="metadata" playsinline></video>';
+      }
+      return '<a href="' + gbEscape(url) + '" target="_blank" rel="noopener">' +
+               '<img loading="lazy" src="' + gbEscape(url) + '" alt="" />' +
+             '</a>';
+    }).join('');
+    return '<div class="gb-entry-media' + single + '">' + tiles + '</div>';
   }
 
   async function deleteGuestbookEntry(id){
@@ -5098,14 +5163,116 @@
     $('#guestbook-sign').hidden = false;
     $('#guestbook-textarea').value = '';
     $('#guestbook-counter').textContent = '0/280';
+    composeMedia.length = 0;
+    renderComposeMedia();
     gbClearError();
     $('#gb-status-cell').textContent = 'ready';
+  }
+
+  // ── Compose media uploads (Vercel Blob, client-direct) ──
+  const MAX_MEDIA_PER_ENTRY = 4;
+  const MAX_MEDIA_BYTES = 50 * 1024 * 1024;
+  const ALLOWED_MEDIA_TYPES = new Set([
+    'image/jpeg','image/png','image/gif','image/webp','image/avif',
+    'video/mp4','video/webm','video/quicktime',
+  ]);
+  const composeMedia = [];
+
+  let _blobClientPromise = null;
+  function loadBlobClient(){
+    if(!_blobClientPromise) _blobClientPromise = import('https://esm.sh/@vercel/blob@0.27.3/client');
+    return _blobClientPromise;
+  }
+
+  function renderComposeMedia(){
+    const tray = $('#guestbook-media-tray');
+    if(!tray) return;
+    tray.innerHTML = composeMedia.map(m => {
+      const isVideo = (m.contentType || '').startsWith('video/');
+      const preview = m.previewUrl
+        ? (isVideo ? '<video src="' + gbEscape(m.previewUrl) + '" muted></video>' : '<img src="' + gbEscape(m.previewUrl) + '" alt="" />')
+        : '';
+      const label = m.status === 'done'
+        ? '✓'
+        : m.status === 'error'
+          ? '✗ ' + gbEscape(m.error || 'failed')
+          : (m.progress != null ? Math.round(m.progress) + '%' : 'uploading…');
+      return (
+        '<div class="gb-media-pending" data-media-id="' + gbEscape(m.id) + '">' +
+          preview +
+          '<button class="gb-media-remove" type="button" data-remove-media="' + gbEscape(m.id) + '">×</button>' +
+          (m.status === 'done' ? '' : '<div class="gb-media-progress">' + label + '</div>') +
+        '</div>'
+      );
+    }).join('');
+  }
+
+  async function addComposeFiles(fileList){
+    gbClearError();
+    const files = Array.from(fileList || []);
+    for(const file of files){
+      if(composeMedia.length >= MAX_MEDIA_PER_ENTRY){
+        gbShowError('max ' + MAX_MEDIA_PER_ENTRY + ' attachments per entry.'); break;
+      }
+      if(!ALLOWED_MEDIA_TYPES.has(file.type)){
+        gbShowError('unsupported type: ' + (file.type || file.name)); continue;
+      }
+      if(file.size > MAX_MEDIA_BYTES){
+        gbShowError(file.name + ' is over 50MB.'); continue;
+      }
+      const id = 'm' + Date.now() + '_' + Math.random().toString(36).slice(2,6);
+      const previewUrl = URL.createObjectURL(file);
+      const item = { id, file, contentType: file.type, status: 'pending', progress: 0, previewUrl };
+      composeMedia.push(item);
+      renderComposeMedia();
+      uploadComposeMedia(item).catch(() => {});
+    }
+  }
+
+  async function uploadComposeMedia(item){
+    item.status = 'uploading'; item.progress = 0;
+    renderComposeMedia();
+    try{
+      if(!isVerified()) throw new Error('verification expired — re-sign.');
+      const { upload } = await loadBlobClient();
+      const safeName = (item.file.name || 'file').replace(/[^a-zA-Z0-9._-]+/g, '_').slice(0, 80);
+      const pathname = 'guestbook/' + (verifyState.address || 'anon') + '/' + safeName;
+      const result = await upload(pathname, item.file, {
+        access: 'public',
+        handleUploadUrl: '/api/blob-upload',
+        clientPayload: JSON.stringify({ verifyToken: verifyState.token }),
+        contentType: item.file.type,
+        onUploadProgress: (e) => {
+          if(e && typeof e.percentage === 'number'){
+            item.progress = e.percentage; renderComposeMedia();
+          }
+        },
+      });
+      item.url = result.url; item.status = 'done';
+      renderComposeMedia();
+    } catch (e){
+      item.status = 'error'; item.error = (e && e.message) || 'upload failed';
+      renderComposeMedia();
+    }
+  }
+
+  function removeComposeMedia(id){
+    const idx = composeMedia.findIndex(m => m.id === id);
+    if(idx === -1) return;
+    try{ composeMedia[idx].previewUrl && URL.revokeObjectURL(composeMedia[idx].previewUrl); } catch (_){ /* ignore */ }
+    composeMedia.splice(idx, 1);
+    renderComposeMedia();
   }
 
   async function submitGuestbookEntry(){
     gbClearError();
     const message = $('#guestbook-textarea').value;
-    if(!message.trim()){ gbShowError('write a message first.'); return; }
+    const doneMedia = composeMedia.filter(m => m.status === 'done');
+    const stillUploading = composeMedia.some(m => m.status === 'uploading' || m.status === 'pending');
+    if(stillUploading){ gbShowError('wait for uploads to finish.'); return; }
+    if(!message.trim() && !doneMedia.length){
+      gbShowError('write a message or attach media.'); return;
+    }
     if(!isVerified()){ gbShowError('verification expired — sign again.'); gbResetCompose(); return; }
     const submitBtn = $('#guestbook-submit');
     submitBtn.disabled = true; submitBtn.textContent = 'posting…';
@@ -5114,7 +5281,11 @@
       const r = await fetch('/api/guestbook', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: verifyState.token, message }),
+        body: JSON.stringify({
+          token: verifyState.token,
+          message,
+          media: doneMedia.map(m => ({ url: m.url, contentType: m.contentType })),
+        }),
       });
       const data = await r.json().catch(() => ({}));
       if(!r.ok){ gbShowError(data.error || ('failed (' + r.status + ')')); $('#gb-status-cell').textContent = 'error'; return; }
@@ -5442,6 +5613,15 @@
     $('#guestbook-submit')?.addEventListener('click', submitGuestbookEntry);
     $('#guestbook-textarea')?.addEventListener('input', e => {
       $('#guestbook-counter').textContent = e.target.value.length + '/280';
+    });
+    $('#guestbook-file-input')?.addEventListener('change', e => {
+      addComposeFiles(e.target.files);
+      // Reset so picking the same file again re-fires.
+      e.target.value = '';
+    });
+    $('#guestbook-media-tray')?.addEventListener('click', e => {
+      const rm = e.target.closest?.('[data-remove-media]');
+      if(rm){ e.preventDefault(); removeComposeMedia(rm.getAttribute('data-remove-media')); }
     });
 
     // Profile modal

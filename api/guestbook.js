@@ -14,6 +14,32 @@ const MAX_ENTRIES = 5000;
 const MAX_MESSAGE_LEN = 280;
 const RATE_LIMIT_SECONDS = 24 * 60 * 60;
 const ADMIN_ADDRESSES = new Set(['0x9aa8f40bff01e953fe278179c3888ae8195b839b']);
+const MAX_MEDIA_PER_ENTRY = 4;
+const ALLOWED_MEDIA_TYPES = new Set([
+  'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/avif',
+  'video/mp4', 'video/webm', 'video/quicktime',
+]);
+
+function isAllowedBlobUrl(u) {
+  try {
+    const url = new URL(u);
+    return url.protocol === 'https:' && /\.public\.blob\.vercel-storage\.com$/.test(url.host);
+  } catch { return false; }
+}
+
+function sanitizeMedia(arr) {
+  if (!Array.isArray(arr)) return [];
+  const out = [];
+  for (const m of arr.slice(0, MAX_MEDIA_PER_ENTRY)) {
+    if (!m || typeof m !== 'object') continue;
+    const url = typeof m.url === 'string' ? m.url : '';
+    const contentType = typeof m.contentType === 'string' ? m.contentType : '';
+    if (!isAllowedBlobUrl(url)) continue;
+    if (!ALLOWED_MEDIA_TYPES.has(contentType)) continue;
+    out.push({ url, contentType });
+  }
+  return out;
+}
 
 function kvEnv() {
   const url = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
@@ -149,12 +175,13 @@ export default async function handler(req, res) {
 
   const token = typeof body.token === 'string' ? body.token : '';
   const messageRaw = typeof body.message === 'string' ? body.message : '';
+  const media = sanitizeMedia(body.media);
   if (!token) { res.status(400).json({ error: 'missing token' }); return; }
   if (messageRaw.length > MAX_MESSAGE_LEN * 4) {
     res.status(413).json({ error: 'message too long' }); return;
   }
   const message = sanitize(messageRaw);
-  if (!message) { res.status(400).json({ error: 'message empty' }); return; }
+  if (!message && !media.length) { res.status(400).json({ error: 'message or media required' }); return; }
 
   let verify;
   try {
@@ -187,6 +214,7 @@ export default async function handler(req, res) {
     address,
     addressShort: shortAddr(address),
     message,
+    media,
     ts: new Date().toISOString(),
   };
 
