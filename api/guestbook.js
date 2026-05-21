@@ -69,6 +69,25 @@ export default async function handler(req, res) {
         })
         .filter(Boolean);
       const total = await kv('LLEN', LIST_KEY).catch(() => entries.length);
+
+      // Decorate with each author's current avatar (1 KV call, not N).
+      try {
+        const unique = [...new Set(entries.map((e) => e.address).filter(Boolean))];
+        if (unique.length) {
+          const avatarRaw = await kv('HMGET', 'profile:avatar', ...unique);
+          const map = {};
+          unique.forEach((addr, i) => {
+            const v = avatarRaw?.[i];
+            if (!v) return;
+            try { map[addr] = JSON.parse(v); } catch { /* skip */ }
+          });
+          for (const e of entries) {
+            const a = map[e.address];
+            if (a) e.avatar = { image: a.image, tokenId: a.tokenId };
+          }
+        }
+      } catch { /* non-fatal; entries render without avatars */ }
+
       res.status(200).json({ entries, total });
     } catch (e) {
       res.status(500).json({ error: e.message || 'kv error' });

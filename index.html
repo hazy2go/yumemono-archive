@@ -1974,6 +1974,23 @@
   }
   .gb-entry-addr{ color: #4a3a2a; font-weight: bold }
   .gb-entry-time{ margin-left: auto }
+  .gb-entry{ display: flex; align-items: flex-start; gap: 10px }
+  .gb-entry-body{ flex: 1; min-width: 0 }
+  .gb-entry-avatar{
+    flex-shrink: 0;
+    display: block; width: 40px; height: 40px;
+    border: 1px solid #0a0f22; background: #f0e5cf; text-decoration: none;
+    overflow: hidden;
+    box-shadow: 1px 1px 0 rgba(10,15,34,.2);
+  }
+  .gb-entry-avatar img{ width: 100%; height: 100%; object-fit: cover; display: block }
+  .gb-entry-avatar-fallback{
+    display: flex; align-items: center; justify-content: center;
+    width: 100%; height: 100%;
+    font-family: 'VT323', monospace; font-size: 16px; color: #4a3a2a; font-weight: bold;
+  }
+  a.gb-entry-addr{ color: #4a3a2a; text-decoration: none; font-weight: bold }
+  a.gb-entry-addr:hover{ text-decoration: underline }
   .gb-entry-del{
     background: #ffe4e4; border: 1px solid #b22a2a;
     font-family: 'VT323', monospace; font-size: 14px;
@@ -2044,6 +2061,26 @@
     color: #8b6a4a; line-height: 1.3;
   }
   .profile-nft-meta a{ color: #8b3a1e; text-decoration: underline }
+  .profile-nft-avatar{ outline: 2px solid #ffae3a; outline-offset: -2px }
+  .gb-btn-set-avatar{
+    margin-top: 4px; padding: 3px 6px;
+    font-family: 'VT323', monospace; font-size: 12px;
+    background: linear-gradient(#fff,#e7d6b8); color: #0a0f22;
+    border: 1px solid #0a0f22; box-shadow: 1px 1px 0 #0a0f22;
+    cursor: pointer; width: 100%;
+  }
+  .gb-btn-set-avatar:hover{ background: linear-gradient(#fff,#ffd98a) }
+  .profile-nft-badge{
+    font-family: 'VT323', monospace; font-size: 11px;
+    color: #b87810; text-align: center; padding-top: 2px;
+  }
+  .members-card.xp-window.xp-maximized,
+  .profile-card.xp-window.xp-maximized,
+  .guestbook-card.xp-window.xp-maximized{
+    width: 96vw !important;
+    height: 92vh !important;
+    max-height: 92vh !important;
+  }
   @media (max-width: 720px){
     .profile-grid{ grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)) }
     .profile-meta > button{ margin-left: 0; width: 100% }
@@ -4960,6 +4997,7 @@
     $('#guestbook-modal').classList.remove('open');
     $('#guestbook-modal').setAttribute('aria-hidden','true');
     if(!anyModalOpen()) document.body.style.overflow = '';
+    if(location.pathname === '/guestbook'){ history.pushState({}, '', '/'); }
   }
   function anyModalOpen(){
     return ['#members-modal','#about-modal','#gallery-modal','#guestbook-modal','#profile-modal','#thread-modal','#lightbox','#video-lightbox']
@@ -4977,18 +5015,32 @@
     if(!entries.length){
       list.innerHTML = '<div class="gb-empty">no entries yet — be the first.</div>';
     } else {
-      list.innerHTML = entries.map(e =>
-        '<div class="gb-entry" data-entry-id="' + gbEscape(e.id || '') + '">' +
-          '<div class="gb-entry-head">' +
-            '<span class="gb-entry-addr">' + gbEscape(e.addressShort || shortAddr(e.address)) + '</span>' +
-            '<span class="gb-entry-time">' + gbEscape(gbRelTime(e.ts)) + '</span>' +
-            (admin && e.id
-              ? '<button class="gb-entry-del" type="button" data-del="' + gbEscape(e.id) + '" title="Admin: delete entry">×</button>'
-              : '') +
-          '</div>' +
-          '<div class="gb-entry-msg">' + gbEscape(e.message) + '</div>' +
-        '</div>'
-      ).join('');
+      list.innerHTML = entries.map(e => {
+        const avatarImg = e.avatar?.image;
+        const profileHref = e.address ? '/profile/' + e.address : '#';
+        return (
+          '<div class="gb-entry" data-entry-id="' + gbEscape(e.id || '') + '">' +
+            '<a class="gb-entry-avatar" href="' + gbEscape(profileHref) + '" data-profile-addr="' + gbEscape(e.address || '') + '" aria-label="View profile">' +
+              (avatarImg
+                ? '<img loading="lazy" src="' + gbEscape(avatarImg) + '" alt="" />'
+                : '<span class="gb-entry-avatar-fallback">' + gbEscape((e.address || '0x?').slice(2,4).toUpperCase()) + '</span>'
+              ) +
+            '</a>' +
+            '<div class="gb-entry-body">' +
+              '<div class="gb-entry-head">' +
+                '<a class="gb-entry-addr" href="' + gbEscape(profileHref) + '" data-profile-addr="' + gbEscape(e.address || '') + '">' +
+                  gbEscape(e.addressShort || shortAddr(e.address)) +
+                '</a>' +
+                '<span class="gb-entry-time">' + gbEscape(gbRelTime(e.ts)) + '</span>' +
+                (admin && e.id
+                  ? '<button class="gb-entry-del" type="button" data-del="' + gbEscape(e.id) + '" title="Admin: delete entry">×</button>'
+                  : '') +
+              '</div>' +
+              '<div class="gb-entry-msg">' + gbEscape(e.message) + '</div>' +
+            '</div>' +
+          '</div>'
+        );
+      }).join('');
     }
     $('#gb-total').textContent = (total ?? entries.length) + ' entries';
     if(entries.length){
@@ -5113,46 +5165,84 @@
   // ─────────────────────────────────────────────────────────
   // Profile
   // ─────────────────────────────────────────────────────────
-  const profileState = { loaded: false, nfts: [], downloading: false };
+  const YUME_COLLECTION = '0x7011ee079f579eb313012bddb92fd6f06fa43335';
+  const profileState = { address: null, nfts: [], downloading: false, mode: 'self', avatar: null };
 
-  function openProfileModal(){
+  function openProfileModal(address){
     document.body.style.overflow = 'hidden';
     $('#profile-modal').classList.add('open');
     $('#profile-modal').setAttribute('aria-hidden','false');
+    document.querySelector('.profile-card')?.classList.add('xp-maximized');
+    const target = (address || '').toLowerCase();
+    const own = !target || target === (verifyState.address || '').toLowerCase();
+    profileState.mode = own ? 'self' : 'other';
+    profileState.address = target || verifyState.address || null;
     refreshProfileView();
   }
   function closeProfileModal(){
     $('#profile-modal').classList.remove('open');
     $('#profile-modal').setAttribute('aria-hidden','true');
     if(!anyModalOpen()) document.body.style.overflow = '';
+    // If we landed via /profile path, go home on close.
+    if(/^\/profile(\/|$)/.test(location.pathname)){
+      history.pushState({}, '', '/');
+    }
   }
 
   function refreshProfileView(){
     const verified = isVerified();
-    $('#profile-connect').hidden = verified;
+    const ownMode = profileState.mode === 'self';
+    $('#profile-connect').hidden = ownMode ? verified : true;
     $('#profile-loading').hidden = true;
-    $('#profile-content').hidden = !verified || !profileState.loaded;
     $('#profile-error').hidden = true;
-    if(verified && !profileState.loaded) loadProfile();
+    // For 'other' mode we always load (public read).
+    if(ownMode){
+      $('#profile-content').hidden = !verified;
+      if(verified) loadProfile();
+    } else {
+      $('#profile-content').hidden = false;
+      loadProfile();
+    }
   }
 
   function onProfileBtnClick(){
-    if(isVerified()) openProfileModal();
-    else openVerifyFlow('profile');
+    if(isVerified()){
+      history.pushState({}, '', '/profile/' + verifyState.address);
+      openProfileModal();
+    } else {
+      openVerifyFlow('profile');
+    }
   }
 
   async function loadProfile(){
-    if(!isVerified()) return;
+    const own = profileState.mode === 'self';
+    if(own && !isVerified()) return;
+    const addr = profileState.address;
+    if(!addr) return;
     $('#profile-loading').hidden = false;
     $('#profile-content').hidden = true;
     $('#profile-status-cell').textContent = 'fetching…';
     $('#profile-error').hidden = true;
     try{
-      const r = await fetch(NFTROLES_ORIGIN + '/api/public/holder/profile?token=' + encodeURIComponent(verifyState.token), { cache: 'no-store' });
+      const url = own
+        ? NFTROLES_ORIGIN + '/api/public/holder/profile?token=' + encodeURIComponent(verifyState.token)
+        : NFTROLES_ORIGIN + '/api/public/holder/profile?address=' + encodeURIComponent(addr) + '&collection=' + YUME_COLLECTION;
+      const [profileRes, avatarRes] = await Promise.allSettled([
+        fetch(url, { cache: 'no-store' }),
+        fetch('/api/profile?address=' + encodeURIComponent(addr), { cache: 'no-store' }),
+      ]);
+      if(profileRes.status !== 'fulfilled') throw new Error('network error');
+      const r = profileRes.value;
       const data = await r.json().catch(() => ({}));
       if(!r.ok) throw new Error(data.error || ('failed (' + r.status + ')'));
       profileState.nfts = data.nfts || [];
-      profileState.loaded = true;
+      profileState.address = data.address || addr;
+      if(avatarRes.status === 'fulfilled' && avatarRes.value.ok){
+        const aData = await avatarRes.value.json().catch(() => ({}));
+        profileState.avatar = aData.avatar || null;
+      } else {
+        profileState.avatar = null;
+      }
       renderProfile(data);
       $('#profile-loading').hidden = true;
       $('#profile-content').hidden = false;
@@ -5160,17 +5250,20 @@
     } catch (e){
       $('#profile-loading').hidden = true;
       const err = $('#profile-error');
-      err.textContent = 'couldn\'t fetch your profile: ' + (e && e.message);
+      err.textContent = 'couldn\'t fetch profile: ' + (e && e.message);
       err.hidden = false;
       $('#profile-status-cell').textContent = 'error';
     }
   }
 
   function renderProfile(data){
-    $('#profile-addr').textContent = shortAddr(data.address || verifyState.address);
+    const own = profileState.mode === 'self';
+    $('#profile-addr').textContent = shortAddr(data.address || profileState.address);
     $('#profile-count').textContent = String(data.count ?? (data.nfts || []).length);
+    $('#profile-download-all').hidden = !own;
     const grid = $('#profile-grid');
     const nfts = data.nfts || [];
+    const currentAvatarTokenId = profileState.avatar?.tokenId;
     if(!nfts.length){
       grid.innerHTML = '<div class="gb-empty">no yume found in this wallet.</div>';
       $('#profile-download-all').disabled = true;
@@ -5180,9 +5273,10 @@
       const img = n.image || n.imageOriginal || '';
       const acquired = n.acquiredAt ? gbRelTime(n.acquiredAt) : 'unknown';
       const name = n.name || ('Yume #' + n.tokenId);
-      const tokenLink = 'https://opensea.io/assets/ethereum/0x7011ee079f579eb313012bddb92fd6f06fa43335/' + encodeURIComponent(n.tokenId);
+      const tokenLink = 'https://opensea.io/assets/ethereum/' + YUME_COLLECTION + '/' + encodeURIComponent(n.tokenId);
+      const isAvatar = currentAvatarTokenId === n.tokenId;
       return (
-        '<div class="profile-nft" data-token-id="' + gbEscape(n.tokenId) + '">' +
+        '<div class="profile-nft' + (isAvatar ? ' profile-nft-avatar' : '') + '" data-token-id="' + gbEscape(n.tokenId) + '">' +
           (img ? '<img loading="lazy" src="' + gbEscape(img) + '" alt="' + gbEscape(name) + '" />' : '<div class="profile-nft-img-placeholder"></div>') +
           '<div class="profile-nft-name">' + gbEscape(name) + '</div>' +
           '<div class="profile-nft-meta">' +
@@ -5190,10 +5284,43 @@
             (n.acquiredAt ? 'acquired ' + gbEscape(acquired) : 'acquired unknown') +
             ' · <a href="' + gbEscape(tokenLink) + '" target="_blank" rel="noopener">opensea</a>' +
           '</div>' +
+          (own
+            ? '<button class="gb-btn gb-btn-set-avatar" type="button" data-avatar-token="' + gbEscape(n.tokenId) + '">' +
+                (isAvatar ? '★ current avatar' : '☆ set as avatar') +
+              '</button>'
+            : '') +
+          (isAvatar && !own ? '<div class="profile-nft-badge">★ avatar</div>' : '') +
         '</div>'
       );
     }).join('');
     $('#profile-download-all').disabled = false;
+  }
+
+  async function setAvatar(tokenId){
+    if(!isVerified()) return;
+    const nft = profileState.nfts.find(n => n.tokenId === tokenId);
+    if(!nft) return;
+    try{
+      const r = await fetch('/api/profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          token: verifyState.token,
+          tokenId,
+          image: nft.image || nft.imageOriginal || '',
+          name: nft.name || ('Yume #' + tokenId),
+        }),
+      });
+      const data = await r.json().catch(() => ({}));
+      if(!r.ok){ alert(data.error || 'failed to set avatar'); return; }
+      profileState.avatar = data.avatar;
+      // Re-render grid to update the "★ current" indicator
+      renderProfile({ address: profileState.address, count: profileState.nfts.length, nfts: profileState.nfts });
+      // Refresh guestbook in case the user is in it.
+      loadGuestbookEntries();
+    } catch (e){
+      alert('network error: ' + (e && e.message));
+    }
   }
 
   async function loadJsZip(){
@@ -5294,6 +5421,16 @@
       if(del){
         e.preventDefault();
         deleteGuestbookEntry(del.getAttribute('data-del'));
+        return;
+      }
+      const prof = e.target.closest?.('[data-profile-addr]');
+      if(prof){
+        const addr = prof.getAttribute('data-profile-addr');
+        if(!addr) return;
+        e.preventDefault();
+        closeGuestbookModal();
+        history.pushState({}, '', '/profile/' + addr);
+        openProfileModal(addr);
       }
     });
     $('#guestbook-modal .xp-max')?.addEventListener('click', () => {
@@ -5312,6 +5449,8 @@
     $('#profile-close')?.addEventListener('click', closeProfileModal);
     $('#profile-modal')?.addEventListener('click', e => {
       if(e.target.id === 'profile-modal') closeProfileModal();
+      const avatarBtn = e.target.closest?.('[data-avatar-token]');
+      if(avatarBtn){ e.preventDefault(); setAvatar(avatarBtn.getAttribute('data-avatar-token')); }
     });
     $('#profile-modal .xp-max')?.addEventListener('click', () => {
       document.querySelector('.profile-card')?.classList.toggle('xp-maximized');
@@ -5322,7 +5461,10 @@
 
     // Guestbook hero strip
     $('#guestbook-hero-sign')?.addEventListener('click', onGuestbookSignClick);
-    $('#guestbook-hero-see-all')?.addEventListener('click', openGuestbookModal);
+    $('#guestbook-hero-see-all')?.addEventListener('click', () => {
+      history.pushState({}, '', '/guestbook');
+      handleRouting();
+    });
 
     window.addEventListener('message', onVerifyMessage);
 
@@ -5348,6 +5490,23 @@
     // Always render the hero strip + load latest entry in background.
     loadGuestbookEntries();
     refreshVerifiedUI();
+
+    // Path-based routing: /profile, /profile/0xADDR, /guestbook
+    handleRouting();
+    window.addEventListener('popstate', handleRouting);
+  }
+
+  function handleRouting(){
+    const path = location.pathname.replace(/\/+$/, '');
+    const m = path.match(/^\/profile(?:\/(0x[0-9a-fA-F]{40}))?$/);
+    if(m){
+      openProfileModal(m[1] || undefined);
+      return;
+    }
+    if(path === '/guestbook'){
+      openGuestbookModal();
+      document.querySelector('.guestbook-card')?.classList.add('xp-maximized');
+    }
   }
 
   async function load(){
