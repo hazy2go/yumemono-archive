@@ -99,23 +99,32 @@ export default async function handler(req, res) {
         .filter(Boolean);
       const total = await kv('LLEN', LIST_KEY).catch(() => entries.length);
 
-      // Decorate with each author's current avatar (1 KV call, not N).
+      // Decorate with each author's current avatar + display name (2 KV
+      // calls regardless of entry count). Both lookups live in their own
+      // hash, so changing them retroactively updates every past entry.
       try {
         const unique = [...new Set(entries.map((e) => e.address).filter(Boolean))];
         if (unique.length) {
-          const avatarRaw = await kv('HMGET', 'profile:avatar', ...unique);
-          const map = {};
+          const [avatarRaw, nameRaw] = await Promise.all([
+            kv('HMGET', 'profile:avatar', ...unique),
+            kv('HMGET', 'profile:name', ...unique),
+          ]);
+          const avatarMap = {};
+          const nameMap = {};
           unique.forEach((addr, i) => {
             const v = avatarRaw?.[i];
-            if (!v) return;
-            try { map[addr] = JSON.parse(v); } catch { /* skip */ }
+            if (v) { try { avatarMap[addr] = JSON.parse(v); } catch {} }
+            const n = nameRaw?.[i];
+            if (n) nameMap[addr] = n;
           });
           for (const e of entries) {
-            const a = map[e.address];
+            const a = avatarMap[e.address];
             if (a) e.avatar = { image: a.image, tokenId: a.tokenId };
+            const n = nameMap[e.address];
+            if (n) e.displayName = n;
           }
         }
-      } catch { /* non-fatal; entries render without avatars */ }
+      } catch { /* non-fatal; entries render without decorations */ }
 
       res.status(200).json({ entries, total });
     } catch (e) {

@@ -1,12 +1,20 @@
 // Vercel Node Function: /api/profile
-//   GET  ?address=0x...           -> { address, avatar: { tokenId, image, name } | null }
-//   POST { token, tokenId, image, name } -> set caller's avatar (token-gated)
-//   DELETE { token }              -> clear caller's avatar
+//   GET  ?address=0x...   -> { address, avatar, displayName }
+//   POST { token, ... }   -> update caller's profile
+//     - avatar: pass tokenId + image + name to set
+//     - displayName: pass displayName (1-32 chars, or empty string to clear)
+//   DELETE { token, field } -> 'avatar' | 'name' | undefined (=avatar, legacy)
 //
-// KV: hash key "profile:avatar" → { [address]: { tokenId, image, name, ts } }
+// KV layout:
+//   hash "profile:avatar"  -> { [address]: JSON { tokenId, image, name, ts } }
+//   hash "profile:name"    -> { [address]: <displayName> }
+//
+// Names are stored ONLY here (not embedded in guestbook entries), so
+// changing a name automatically updates every past entry the user posted.
 
 const VERIFY_URL = 'https://nftroles.xyz/api/public/verify/check';
 const YUME_COLLECTION = '0x7011ee079f579eb313012bddb92fd6f06fa43335';
+const MAX_NAME_LEN = 32;
 
 function kvEnv(){
   const url = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
@@ -29,6 +37,16 @@ async function kv(cmd, ...args){
 
 function isAddress(a){ return typeof a === 'string' && /^0x[0-9a-fA-F]{40}$/.test(a); }
 
+function sanitizeName(s){
+  let out = '';
+  for (const ch of String(s ?? '')) {
+    const c = ch.codePointAt(0);
+    if (c < 0x20 || c === 0x7f) continue;
+    out += ch;
+  }
+  return out.replace(/\s+/g, ' ').trim().slice(0, MAX_NAME_LEN);
+}
+
 async function verifyTokenAddress(token){
   if (!token) return null;
   const r = await fetch(`${VERIFY_URL}?token=${encodeURIComponent(token)}`, { cache: 'no-store' });
@@ -46,6 +64,9 @@ async function readAvatar(address){
     return JSON.parse(raw);
   } catch { return null; }
 }
+async function readName(address){
+  try { return (await kv('HGET', 'profile:name', address)) || null; } catch { return null; }
+}
 
 export default async function handler(req, res){
   res.setHeader('Cache-Control', 'no-store');
@@ -54,8 +75,8 @@ export default async function handler(req, res){
     const address = (req.query?.address || '').toString().toLowerCase();
     if (!isAddress(address)) { res.status(400).json({ error: 'invalid address' }); return; }
     try{
-      const avatar = await readAvatar(address);
-      res.status(200).json({ address, avatar });
+      const [avatar, displayName] = await Promise.all([readAvatar(address), readName(address)]);
+      res.status(200).json({ address, avatar, displayName });
     } catch (e){
       res.status(500).json({ error: e.message });
     }
@@ -70,25 +91,33 @@ export default async function handler(req, res){
 
   if (req.method === 'POST'){
     const token = typeof body.token === 'string' ? body.token : '';
+    let address;
+    try { address = await verifyTokenAddress(token); }
+    catch { address = null; }
+    if (!address){ res.status(401).json({ error: 'token invalid or expired' }); return; }
+
+    // displayName-only update
+    if (typeof body.displayName === 'string' && body.tokenId === undefined && body.image === undefined){
+      const name = sanitizeName(body.displayName);
+      try{
+        if (name) await kv('HSET', 'profile:name', address, name);
+        else      await kv('HDEL', 'profile:name', address);
+        res.status(200).json({ address, displayName: name || null });
+      } catch (e){ res.status(500).json({ error: e.message }); }
+      return;
+    }
+
+    // Avatar update (tokenId + image required)
     const tokenId = String(body.tokenId ?? '').slice(0, 80);
     const image = typeof body.image === 'string' ? body.image.slice(0, 1000) : '';
     const name = typeof body.name === 'string' ? body.name.slice(0, 120) : '';
-
-    if (!tokenId || !image){ res.status(400).json({ error: 'tokenId + image required' }); return; }
+    if (!tokenId || !image){ res.status(400).json({ error: 'tokenId + image required (or displayName)' }); return; }
     if (!/^https?:\/\//i.test(image)){ res.status(400).json({ error: 'image must be http(s) url' }); return; }
-
-    let address;
-    try { address = await verifyTokenAddress(token); }
-    catch (e){ res.status(502).json({ error: 'token check failed' }); return; }
-    if (!address){ res.status(401).json({ error: 'token invalid or expired' }); return; }
-
     const entry = { tokenId, image, name, ts: new Date().toISOString() };
     try{
       await kv('HSET', 'profile:avatar', address, JSON.stringify(entry));
       res.status(200).json({ address, avatar: entry });
-    } catch (e){
-      res.status(500).json({ error: e.message });
-    }
+    } catch (e){ res.status(500).json({ error: e.message }); }
     return;
   }
 
@@ -97,12 +126,16 @@ export default async function handler(req, res){
     try { address = await verifyTokenAddress(body.token || ''); }
     catch { address = null; }
     if (!address){ res.status(401).json({ error: 'token invalid or expired' }); return; }
+    const field = (body.field || 'avatar').toString();
     try{
-      await kv('HDEL', 'profile:avatar', address);
-      res.status(200).json({ address, avatar: null });
-    } catch (e){
-      res.status(500).json({ error: e.message });
-    }
+      if (field === 'name') {
+        await kv('HDEL', 'profile:name', address);
+        res.status(200).json({ address, displayName: null });
+      } else {
+        await kv('HDEL', 'profile:avatar', address);
+        res.status(200).json({ address, avatar: null });
+      }
+    } catch (e){ res.status(500).json({ error: e.message }); }
     return;
   }
 

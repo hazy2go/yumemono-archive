@@ -2036,6 +2036,10 @@
   }
   a.gb-entry-addr{ color: #4a3a2a; text-decoration: none; font-weight: bold }
   a.gb-entry-addr:hover{ text-decoration: underline }
+  .gb-entry-handle{
+    font-family: 'VT323', monospace; font-size: 12px;
+    color: #8b6a4a; opacity: .7;
+  }
   .gb-entry-del{
     background: #ffe4e4; border: 1px solid #b22a2a;
     font-family: 'VT323', monospace; font-size: 14px;
@@ -2107,6 +2111,23 @@
   }
   .profile-nft-meta a{ color: #8b3a1e; text-decoration: underline }
   .profile-nft-avatar{ outline: 2px solid #ffae3a; outline-offset: -2px }
+  .profile-name-editor{
+    padding: 10px 12px; margin-bottom: 10px;
+    background: #fff7e4; border: 1px solid #d8a890;
+  }
+  .profile-name-row{
+    display: flex; align-items: center; gap: 6px; margin-top: 4px; flex-wrap: wrap;
+  }
+  #profile-name-input{
+    flex: 1; min-width: 160px;
+    font-family: 'VT323', monospace; font-size: 15px;
+    padding: 4px 8px; background: #fff;
+    border: 1px solid #b89a78; color: #0a0f22;
+  }
+  #profile-name-input:focus{ outline: none; border-color: #d8a890 }
+  .profile-name-status{
+    font-family: 'VT323', monospace; font-size: 12px; color: #8b6a4a;
+  }
   .gb-btn-set-avatar{
     margin-top: 4px; padding: 3px 6px;
     font-family: 'VT323', monospace; font-size: 12px;
@@ -3857,6 +3878,15 @@
           </div>
           <button class="gb-btn gb-btn-primary" id="profile-download-all" type="button">⬇ Download all (high-res)</button>
         </div>
+        <div class="profile-name-editor" id="profile-name-editor" hidden>
+          <label class="profile-meta-label" for="profile-name-input">display name (shown on your guestbook entries)</label>
+          <div class="profile-name-row">
+            <input type="text" id="profile-name-input" maxlength="32" placeholder="anon" autocomplete="off" />
+            <button class="gb-btn" id="profile-name-save" type="button">save</button>
+            <button class="gb-btn gb-btn-cancel" id="profile-name-clear" type="button">clear</button>
+            <span class="profile-name-status" id="profile-name-status"></span>
+          </div>
+        </div>
         <p class="profile-download-status" id="profile-download-status" hidden></p>
         <div class="profile-grid" id="profile-grid"></div>
       </div>
@@ -5068,6 +5098,9 @@
       list.innerHTML = entries.map(e => {
         const avatarImg = e.avatar?.image;
         const profileHref = e.address ? '/profile/' + e.address : '#';
+        const addrShort = e.addressShort || shortAddr(e.address);
+        const displayName = e.displayName || addrShort;
+        const showAddr = e.displayName && e.displayName !== addrShort;
         return (
           '<div class="gb-entry" data-entry-id="' + gbEscape(e.id || '') + '">' +
             '<a class="gb-entry-avatar" href="' + gbEscape(profileHref) + '" data-profile-addr="' + gbEscape(e.address || '') + '" aria-label="View profile">' +
@@ -5079,8 +5112,9 @@
             '<div class="gb-entry-body">' +
               '<div class="gb-entry-head">' +
                 '<a class="gb-entry-addr" href="' + gbEscape(profileHref) + '" data-profile-addr="' + gbEscape(e.address || '') + '">' +
-                  gbEscape(e.addressShort || shortAddr(e.address)) +
+                  gbEscape(displayName) +
                 '</a>' +
+                (showAddr ? '<span class="gb-entry-handle">' + gbEscape(addrShort) + '</span>' : '') +
                 '<span class="gb-entry-time">' + gbEscape(gbRelTime(e.ts)) + '</span>' +
                 (admin && e.id
                   ? '<button class="gb-entry-del" type="button" data-del="' + gbEscape(e.id) + '" title="Admin: delete entry">×</button>'
@@ -5369,9 +5403,9 @@
       hero.querySelector('.gh-meta').textContent = '';
       return;
     }
-    hero.querySelector('.gh-msg').textContent = entry.message;
+    hero.querySelector('.gh-msg').textContent = entry.message || '(media)';
     hero.querySelector('.gh-meta').textContent =
-      (entry.addressShort || shortAddr(entry.address)) + ' • ' + gbRelTime(entry.ts);
+      (entry.displayName || entry.addressShort || shortAddr(entry.address)) + ' • ' + gbRelTime(entry.ts);
     refreshVerifiedUI();
   }
 
@@ -5473,8 +5507,10 @@
       if(avatarRes.status === 'fulfilled' && avatarRes.value.ok){
         const aData = await avatarRes.value.json().catch(() => ({}));
         profileState.avatar = aData.avatar || null;
+        profileState.displayName = aData.displayName || '';
       } else {
         profileState.avatar = null;
+        profileState.displayName = '';
       }
       renderProfile(data);
       $('#profile-loading').hidden = true;
@@ -5494,6 +5530,15 @@
     $('#profile-addr').textContent = shortAddr(data.address || profileState.address);
     $('#profile-count').textContent = String(data.count ?? (data.nfts || []).length);
     $('#profile-download-all').hidden = !own;
+    // Name editor only when viewing own profile
+    const editor = $('#profile-name-editor');
+    if(editor){
+      editor.hidden = !own;
+      if(own){
+        $('#profile-name-input').value = profileState.displayName || '';
+        $('#profile-name-status').textContent = profileState.displayName ? '' : 'not set';
+      }
+    }
     const grid = $('#profile-grid');
     const nfts = data.nfts || [];
     const currentAvatarTokenId = profileState.avatar?.tokenId;
@@ -5527,6 +5572,25 @@
       );
     }).join('');
     $('#profile-download-all').disabled = false;
+  }
+
+  async function saveDisplayName(name){
+    if(!isVerified()) return;
+    const status = $('#profile-name-status');
+    status.textContent = 'saving…';
+    try{
+      const r = await fetch('/api/profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: verifyState.token, displayName: name }),
+      });
+      const data = await r.json().catch(() => ({}));
+      if(!r.ok){ status.textContent = data.error || 'failed'; return; }
+      profileState.displayName = data.displayName || '';
+      status.textContent = data.displayName ? '✓ saved' : 'cleared';
+      // Refresh feed so name shows on past entries.
+      loadGuestbookEntries();
+    } catch (e){ status.textContent = (e && e.message) || 'network error'; }
   }
 
   async function setAvatar(tokenId){
@@ -5700,6 +5764,16 @@
     $('#profile-modal .xp-min')?.addEventListener('click', closeProfileModal);
     $('#profile-verify-btn')?.addEventListener('click', () => openVerifyFlow('profile'));
     $('#profile-download-all')?.addEventListener('click', downloadAllProfile);
+    $('#profile-name-save')?.addEventListener('click', () => {
+      saveDisplayName(($('#profile-name-input').value || '').trim());
+    });
+    $('#profile-name-clear')?.addEventListener('click', () => {
+      $('#profile-name-input').value = '';
+      saveDisplayName('');
+    });
+    $('#profile-name-input')?.addEventListener('keydown', (e) => {
+      if(e.key === 'Enter'){ e.preventDefault(); saveDisplayName(e.target.value.trim()); }
+    });
 
     // Guestbook hero strip
     $('#guestbook-hero-sign')?.addEventListener('click', onGuestbookSignClick);
