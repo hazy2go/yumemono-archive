@@ -15,6 +15,32 @@ const ALLOWED_CONTENT_TYPES = new Set([
   'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/avif',
   'video/mp4', 'video/webm', 'video/quicktime',
 ]);
+const UPLOAD_RATE_WINDOW = 60 * 60; // seconds
+const UPLOAD_RATE_LIMIT = 20;        // uploads per address per hour
+
+async function kvIncr(address) {
+  const url = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
+  const tok = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+  if (!url || !tok) return 0;
+  const key = `blob-upload:rl:${address}`;
+  const r = await fetch(url, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${tok}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(['INCR', key]),
+  });
+  if (!r.ok) return 0;
+  const data = await r.json();
+  const count = Number(data.result || 0);
+  if (count === 1) {
+    // First write — set TTL.
+    await fetch(url, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${tok}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(['EXPIRE', key, UPLOAD_RATE_WINDOW]),
+    }).catch(() => {});
+  }
+  return count;
+}
 
 export const config = { api: { bodyParser: false } };
 
@@ -81,6 +107,17 @@ export default async function handler(req, res) {
   try { address = await getVerifiedAddress(parsed.fields.token); }
   catch { address = null; }
   if (!address) { res.status(401).json({ error: 'verification required (yume holder only)' }); return; }
+
+  // Per-address upload rate limit: prevents a single holder from filling
+  // the bucket. Admin (0x9aa8…) is NOT exempt here on purpose — storage
+  // cost is real money.
+  try {
+    const count = await kvIncr(address);
+    if (count > UPLOAD_RATE_LIMIT) {
+      res.status(429).json({ error: `upload rate limit reached (${UPLOAD_RATE_LIMIT}/hour)` });
+      return;
+    }
+  } catch { /* if KV is down, let the upload through */ }
 
   const safeName = (parsed.file.name || 'file').replace(/[^a-zA-Z0-9._-]+/g, '_').slice(0, 80);
   const pathname = `guestbook/${address}/${Date.now()}-${safeName}`;

@@ -24,9 +24,9 @@ function isAllowedBlobUrl(u) {
   try {
     const url = new URL(u);
     if (url.protocol !== 'https:') return false;
-    return /\.public\.blob\.vercel-storage\.com$/.test(url.host)
-        || /\.blob\.vercel-storage\.com$/.test(url.host)
-        || url.host.endsWith('.vercel-storage.com');
+    // Only accept URLs that look like Vercel Blob public storage.
+    // The host has the form <storeIdLowercase>.public.blob.vercel-storage.com.
+    return /^[a-z0-9]+\.public\.blob\.vercel-storage\.com$/.test(url.host);
   } catch { return false; }
 }
 

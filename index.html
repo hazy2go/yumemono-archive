@@ -5042,6 +5042,15 @@
       sessionStorage.setItem(SS_EXP, String(verifyState.expiresAt));
     } catch (_){ /* ignore */ }
     try{ refreshVerifiedUI(); } catch (_){ /* ignore */ }
+    // Register this verified address so the live counter ticks up
+    // even if the user doesn't post or change profile.
+    fetch('/api/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token }),
+    }).then(() => {
+      if (typeof fetchVerifiedCount === 'function') fetchVerifiedCount();
+    }).catch(() => {});
   }
   function clearVerifyState(){
     verifyState.token = null; verifyState.address = null; verifyState.expiresAt = 0;
