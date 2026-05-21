@@ -5,3 +5,7 @@ node_modules/
 data-raw/
 scripts/__pycache__/
 /tmp
+
+# Local-only working tree: pipeline clone, raw sqlite + drive maps,
+# build outputs. Not part of the deployed site.
+/local/
