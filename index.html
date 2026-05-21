@@ -10,6 +10,8 @@
 <link rel="apple-touch-icon" href="/icon-512.png" />
 <!-- JSZip (loaded lazily by the profile modal's "Download all" action) -->
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<!-- Bundled @vercel/blob/client for guestbook media uploads -->
+<script src="/vendor/blob-client.js" defer></script>
 <meta property="og:title" content="Yumemono Archive — 夢物" />
 <meta property="og:description" content="A preservation of the Yumemono X community: 7,423 posts, 903 members, 1,266 media items mirrored to durable storage." />
 <meta property="og:type" content="website" />
@@ -5178,65 +5180,28 @@
   ]);
   const composeMedia = [];
 
-  // Lightweight Vercel Blob client upload — avoids the SDK (which depends on
-  // Node's Buffer polyfill via esm.sh and was failing to load in browsers).
-  const BLOB_API_URL = 'https://blob.vercel-storage.com';
-
+  // Thin wrapper around @vercel/blob/client.upload (bundled at /vendor/blob-client.js).
   async function blobClientUpload(pathname, file, { contentType, clientPayload, handleUploadUrl, onProgress }) {
-    // Step 1: get a clientToken from our handleUpload endpoint.
-    const callbackUrl = new URL(handleUploadUrl, window.location.href).toString();
-    const tokenRes = await fetch(handleUploadUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        type: 'blob.generate-client-token',
-        payload: { pathname, callbackUrl, clientPayload, multipart: false, contentType },
-      }),
-    });
-    const tokenData = await tokenRes.json().catch(() => ({}));
-    if (!tokenRes.ok) throw new Error(tokenData.error || ('token request failed (' + tokenRes.status + ')'));
-    if (tokenData.type !== 'blob.generate-client-token' || !tokenData.clientToken) {
-      throw new Error('bad token response');
+    // The bundled SDK exposes window.VercelBlobClient.upload.
+    // Wait a tick if the defer'd script hasn't finished yet.
+    for (let i = 0; i < 50 && !window.VercelBlobClient; i++) {
+      await new Promise(r => setTimeout(r, 50));
     }
-    const clientToken = tokenData.clientToken;
-
-    // Step 2: PUT the file directly to the blob endpoint. Pathname is a
-    // query param (not a path segment) per Vercel Blob's protocol.
-    return await new Promise((resolve, reject) => {
-      const xhr = new XMLHttpRequest();
-      const url = BLOB_API_URL + '/?pathname=' + encodeURIComponent(pathname);
-      // Request id is required; the SDK uses storeId:timestamp:rand.
-      // We can extract storeId from the clientToken format
-      // (vercel_blob_client_<storeId>_<payload>).
-      let storeId = '';
-      try {
-        const parts = clientToken.split('_');
-        storeId = parts.length >= 4 ? parts[3].split('.')[0] : '';
-      } catch { /* ignore */ }
-      const requestId = (storeId || 'store') + ':' + Date.now() + ':' + Math.random().toString(16).slice(2);
-      xhr.open('PUT', url, true);
-      xhr.setRequestHeader('Authorization', 'Bearer ' + clientToken);
-      xhr.setRequestHeader('x-api-version', '12');
-      xhr.setRequestHeader('x-api-blob-request-id', requestId);
-      xhr.setRequestHeader('x-api-blob-request-attempt', '0');
-      xhr.setRequestHeader('x-content-length', String(file.size || 0));
-      if (contentType) xhr.setRequestHeader('x-content-type', contentType);
-      xhr.upload.onprogress = (e) => {
-        if (e.lengthComputable && typeof onProgress === 'function') {
-          onProgress(Math.min(100, (e.loaded / e.total) * 100));
+    if (!window.VercelBlobClient) throw new Error('upload library failed to load');
+    return window.VercelBlobClient.upload(pathname, file, {
+      access: 'public',
+      handleUploadUrl,
+      clientPayload,
+      contentType,
+      onUploadProgress: (e) => {
+        // v2 fires with { loaded, total, percentage }.
+        if (typeof onProgress === 'function') {
+          const pct = (e && typeof e.percentage === 'number')
+            ? e.percentage
+            : (e && e.total ? (e.loaded / e.total) * 100 : 0);
+          onProgress(pct);
         }
-      };
-      xhr.onload = () => {
-        if (xhr.status >= 200 && xhr.status < 300) {
-          try { resolve(JSON.parse(xhr.responseText)); }
-          catch { reject(new Error('bad blob response')); }
-        } else {
-          reject(new Error('upload failed (' + xhr.status + '): ' + (xhr.responseText || '').slice(0, 200)));
-        }
-      };
-      xhr.onerror = () => reject(new Error('network error during upload'));
-      xhr.onabort = () => reject(new Error('upload aborted'));
-      xhr.send(file);
+      },
     });
   }
 

@@ -3,7 +3,13 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "scripts": {
+    "build:blob-client": "node scripts/bundle-blob-client.mjs"
+  },
   "dependencies": {
     "@vercel/blob": "^2.4.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.0"
   }
 }
