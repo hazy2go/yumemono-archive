@@ -5178,10 +5178,53 @@
   ]);
   const composeMedia = [];
 
-  let _blobClientPromise = null;
-  function loadBlobClient(){
-    if(!_blobClientPromise) _blobClientPromise = import('https://esm.sh/@vercel/blob@0.27.3/client');
-    return _blobClientPromise;
+  // Lightweight Vercel Blob client upload — avoids the SDK (which depends on
+  // Node's Buffer polyfill via esm.sh and was failing to load in browsers).
+  const BLOB_API_URL = 'https://blob.vercel-storage.com';
+
+  async function blobClientUpload(pathname, file, { contentType, clientPayload, handleUploadUrl, onProgress }) {
+    // Step 1: get a clientToken from our handleUpload endpoint.
+    const callbackUrl = new URL(handleUploadUrl, window.location.href).toString();
+    const tokenRes = await fetch(handleUploadUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: 'blob.generate-client-token',
+        payload: { pathname, callbackUrl, clientPayload, multipart: false, contentType },
+      }),
+    });
+    const tokenData = await tokenRes.json().catch(() => ({}));
+    if (!tokenRes.ok) throw new Error(tokenData.error || ('token request failed (' + tokenRes.status + ')'));
+    if (tokenData.type !== 'blob.generate-client-token' || !tokenData.clientToken) {
+      throw new Error('bad token response');
+    }
+    const clientToken = tokenData.clientToken;
+
+    // Step 2: PUT the file directly to the blob endpoint.
+    return await new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      const url = BLOB_API_URL + '/' + encodeURI(pathname).replace(/#/g, '%23');
+      xhr.open('PUT', url, true);
+      xhr.setRequestHeader('Authorization', 'Bearer ' + clientToken);
+      if (contentType) xhr.setRequestHeader('x-content-type', contentType);
+      xhr.setRequestHeader('x-api-blob-request-attempt', '1');
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable && typeof onProgress === 'function') {
+          onProgress(Math.min(100, (e.loaded / e.total) * 100));
+        }
+      };
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          try { resolve(JSON.parse(xhr.responseText)); }
+          catch { reject(new Error('bad blob response')); }
+        } else {
+          reject(new Error('upload failed (' + xhr.status + '): ' + (xhr.responseText || '').slice(0, 200)));
+        }
+      };
+      xhr.onerror = () => reject(new Error('network error during upload'));
+      xhr.onabort = () => reject(new Error('upload aborted'));
+      xhr.send(file);
+    });
   }
 
   function renderComposeMedia(){
@@ -5234,20 +5277,13 @@
     renderComposeMedia();
     try{
       if(!isVerified()) throw new Error('verification expired — re-sign.');
-      const { upload } = await loadBlobClient();
       const safeName = (item.file.name || 'file').replace(/[^a-zA-Z0-9._-]+/g, '_').slice(0, 80);
       const pathname = 'guestbook/' + (verifyState.address || 'anon') + '/' + safeName;
-      const result = await upload(pathname, item.file, {
-        access: 'public',
-        handleUploadUrl: '/api/blob-upload',
-        clientPayload: JSON.stringify({ verifyToken: verifyState.token }),
+      const result = await blobClientUpload(pathname, item.file, {
         contentType: item.file.type,
-        // v0.27.x calls this with a `loaded` byte count.
-        onUploadProgress: (loaded) => {
-          const total = item.file.size || 0;
-          item.progress = total ? Math.min(100, (loaded / total) * 100) : 0;
-          renderComposeMedia();
-        },
+        clientPayload: JSON.stringify({ verifyToken: verifyState.token }),
+        handleUploadUrl: '/api/blob-upload',
+        onProgress: (pct) => { item.progress = pct; renderComposeMedia(); },
       });
       console.log('[blob upload] complete', result);
       item.url = result.url; item.status = 'done';
