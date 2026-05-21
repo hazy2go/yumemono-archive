@@ -13,6 +13,7 @@ const LIST_KEY = 'guestbook:entries';
 const MAX_ENTRIES = 5000;
 const MAX_MESSAGE_LEN = 280;
 const RATE_LIMIT_SECONDS = 24 * 60 * 60;
+const ADMIN_ADDRESSES = new Set(['0x9aa8f40bff01e953fe278179c3888ae8195b839b']);
 
 function kvEnv() {
   const url = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
@@ -75,8 +76,48 @@ export default async function handler(req, res) {
     return;
   }
 
+  if (req.method === 'DELETE') {
+    let body = req.body;
+    if (typeof body === 'string') {
+      try { body = JSON.parse(body); } catch { body = {}; }
+    }
+    if (!body || typeof body !== 'object') body = {};
+    const token = typeof body.token === 'string' ? body.token : '';
+    const entryId = typeof body.id === 'string' ? body.id : '';
+    if (!token || !entryId) { res.status(400).json({ error: 'missing token or id' }); return; }
+
+    let verify;
+    try {
+      const r = await fetch(`${VERIFY_URL}?token=${encodeURIComponent(token)}`, { cache: 'no-store' });
+      if (!r.ok) { res.status(401).json({ error: 'token check failed' }); return; }
+      verify = await r.json();
+    } catch (e) { res.status(502).json({ error: 'token check upstream error' }); return; }
+    if (!verify.valid) { res.status(401).json({ error: 'token invalid or expired' }); return; }
+    const address = String(verify.address || '').toLowerCase();
+    if (!ADMIN_ADDRESSES.has(address)) { res.status(403).json({ error: 'admin only' }); return; }
+
+    try {
+      const raw = await kv('LRANGE', LIST_KEY, 0, MAX_ENTRIES - 1);
+      let removed = 0;
+      for (const s of raw || []) {
+        try {
+          const e = JSON.parse(s);
+          if (e && e.id === entryId) {
+            await kv('LREM', LIST_KEY, 1, s);
+            removed++;
+            break;
+          }
+        } catch { /* skip */ }
+      }
+      res.status(200).json({ removed });
+    } catch (e) {
+      res.status(500).json({ error: e.message || 'delete failed' });
+    }
+    return;
+  }
+
   if (req.method !== 'POST') {
-    res.setHeader('Allow', 'GET, POST');
+    res.setHeader('Allow', 'GET, POST, DELETE');
     res.status(405).json({ error: 'method not allowed' });
     return;
   }

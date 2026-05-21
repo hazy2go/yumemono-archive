@@ -1868,6 +1868,23 @@
   .xp-window::before{ display: none !important }
   .members-card.xp-window > .close{ display: none !important }
 
+  /* ── Connected-as pill in header ───────────────────────── */
+  .connected-pill{
+    display: inline-flex; align-items: center;
+    height: 32px; padding: 0 10px;
+    margin: 0 4px;
+    background: #fff7e4; border: 1.5px solid #0a0f22;
+    box-shadow: 1px 1px 0 #0a0f22;
+    font-family: 'VT323', monospace; font-size: 13px; color: #0a0f22;
+    cursor: pointer;
+  }
+  .connected-pill::before{
+    content: ''; width: 7px; height: 7px; border-radius: 50%;
+    background: #5fb763; box-shadow: 0 0 4px #5fb763;
+    margin-right: 6px;
+  }
+  .connected-pill:hover{ background: #ffe7c0 }
+
   /* ── Guestbook hero strip ──────────────────────────────── */
   .gb-hero{
     display: flex; align-items: center; gap: 12px;
@@ -1974,6 +1991,13 @@
   }
   .gb-entry-addr{ color: #4a3a2a; font-weight: bold }
   .gb-entry-time{ margin-left: auto }
+  .gb-entry-del{
+    background: #ffe4e4; border: 1px solid #b22a2a;
+    font-family: 'VT323', monospace; font-size: 14px;
+    color: #b22a2a; padding: 0 6px; cursor: pointer; line-height: 1;
+    margin-left: 6px;
+  }
+  .gb-entry-del:hover{ background: #b22a2a; color: #fff }
   .gb-entry-msg{
     font-family: 'VT323', monospace; font-size: 15px;
     color: #0a0f22; white-space: pre-wrap; line-height: 1.35;
@@ -2256,6 +2280,22 @@
     transition: .12s;
   }
   .header-btn:hover, .header-btn:focus{ transform: translate(-1px,-1px); outline: none }
+  /* Pastel per-icon tints — keep the aero glaze, swap the body color */
+  .header-btn-profile{
+    background:
+      radial-gradient(circle at 35% 25%, rgba(255,240,220,.85) 0 12%, rgba(255,240,220,.2) 26%, transparent 46%),
+      linear-gradient(180deg, #fcd9e3 0%, #e89cbe 55%, #9c4a76 100%);
+  }
+  .header-btn-gallery{
+    background:
+      radial-gradient(circle at 35% 25%, rgba(255,240,220,.85) 0 12%, rgba(255,240,220,.2) 26%, transparent 46%),
+      linear-gradient(180deg, #cfe9c8 0%, #80c089 55%, #345c3f 100%);
+  }
+  .header-btn-members{
+    background:
+      radial-gradient(circle at 35% 25%, rgba(255,240,220,.85) 0 12%, rgba(255,240,220,.2) 26%, transparent 46%),
+      linear-gradient(180deg, #ffe1ad 0%, #f0b271 55%, #844620 100%);
+  }
   .header-btn:active{ transform: translate(1px,1px) }
 
   @media (max-width: 720px){
@@ -3280,7 +3320,17 @@
       </div>
     </div>
 
-    <button class="header-btn" id="gallery-btn" type="button" aria-label="Gallery" title="Gallery — all media">
+    <button class="header-btn header-btn-profile" id="profile-btn" type="button" aria-label="Profile" title="Profile — holders only">
+      <svg width="22" height="22" viewBox="0 0 10 10" shape-rendering="crispEdges" aria-hidden="true">
+        <g fill="currentColor">
+          <rect x="3" y="1" width="4" height="1"/>
+          <rect x="2" y="2" width="6" height="2"/>
+          <rect x="3" y="4" width="4" height="1"/>
+          <rect x="1" y="6" width="8" height="3"/>
+        </g>
+      </svg>
+    </button>
+    <button class="header-btn header-btn-gallery" id="gallery-btn" type="button" aria-label="Gallery" title="Gallery — all media">
       <svg width="22" height="22" viewBox="0 0 10 10" shape-rendering="crispEdges" aria-hidden="true">
         <g fill="currentColor">
           <rect x="1" y="1" width="3" height="3"/>
@@ -3290,22 +3340,12 @@
         </g>
       </svg>
     </button>
-    <button class="header-btn mobile-only" id="members-btn" type="button" aria-label="Members" title="Members">
+    <button class="header-btn header-btn-members mobile-only" id="members-btn" type="button" aria-label="Members" title="Members">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="9" cy="8" r="3.2"/>
         <circle cx="17" cy="10" r="2.4"/>
         <path d="M3 20c0-3 2.5-5 6-5s6 2 6 5"/>
         <path d="M15 20c0-2 1.5-3.5 4-3.5s2 1.5 2 3.5"/>
-      </svg>
-    </button>
-    <button class="header-btn" id="profile-btn" type="button" aria-label="Profile" title="Profile — holders only">
-      <svg width="22" height="22" viewBox="0 0 10 10" shape-rendering="crispEdges" aria-hidden="true">
-        <g fill="currentColor">
-          <rect x="3" y="1" width="4" height="1"/>
-          <rect x="2" y="2" width="6" height="2"/>
-          <rect x="3" y="4" width="4" height="1"/>
-          <rect x="1" y="6" width="8" height="3"/>
-        </g>
       </svg>
     </button>
 
@@ -4855,13 +4895,13 @@
   function saveVerifyState(token, address){
     verifyState.token = token;
     verifyState.address = (address || '').toLowerCase();
-    // Tokens are 24h; leave a buffer.
     verifyState.expiresAt = Date.now() + 23 * 60 * 60 * 1000;
     try{
       sessionStorage.setItem(SS_TOKEN, verifyState.token);
       sessionStorage.setItem(SS_ADDR, verifyState.address);
       sessionStorage.setItem(SS_EXP, String(verifyState.expiresAt));
     } catch (_){ /* ignore */ }
+    try{ refreshVerifiedUI(); } catch (_){ /* ignore */ }
   }
   function clearVerifyState(){
     verifyState.token = null; verifyState.address = null; verifyState.expiresAt = 0;
@@ -4870,6 +4910,7 @@
       sessionStorage.removeItem(SS_ADDR);
       sessionStorage.removeItem(SS_EXP);
     } catch (_){ /* ignore */ }
+    try{ refreshVerifiedUI(); } catch (_){ /* ignore */ }
   }
   function isVerified(){ return Boolean(verifyState.token) && Date.now() < verifyState.expiresAt; }
 
@@ -4942,16 +4983,25 @@
       .some(sel => $(sel)?.classList.contains('open'));
   }
 
+  const GUESTBOOK_ADMINS = new Set(['0x9aa8f40bff01e953fe278179c3888ae8195b839b']);
+  function isGuestbookAdmin(){
+    return isVerified() && GUESTBOOK_ADMINS.has((verifyState.address || '').toLowerCase());
+  }
+
   function renderGuestbookEntries(entries, total){
     const list = $('#guestbook-list');
+    const admin = isGuestbookAdmin();
     if(!entries.length){
       list.innerHTML = '<div class="gb-empty">no entries yet — be the first.</div>';
     } else {
       list.innerHTML = entries.map(e =>
-        '<div class="gb-entry">' +
+        '<div class="gb-entry" data-entry-id="' + gbEscape(e.id || '') + '">' +
           '<div class="gb-entry-head">' +
             '<span class="gb-entry-addr">' + gbEscape(e.addressShort || shortAddr(e.address)) + '</span>' +
             '<span class="gb-entry-time">' + gbEscape(gbRelTime(e.ts)) + '</span>' +
+            (admin && e.id
+              ? '<button class="gb-entry-del" type="button" data-del="' + gbEscape(e.id) + '" title="Admin: delete entry">×</button>'
+              : '') +
           '</div>' +
           '<div class="gb-entry-msg">' + gbEscape(e.message) + '</div>' +
         '</div>'
@@ -4961,6 +5011,23 @@
     if(entries.length){
       guestbookState.latest = entries[0];
       renderGuestbookHero(entries[0]);
+    }
+  }
+
+  async function deleteGuestbookEntry(id){
+    if(!isGuestbookAdmin()) return;
+    if(!confirm('Delete this guestbook entry?')) return;
+    try{
+      const r = await fetch('/api/guestbook', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: verifyState.token, id }),
+      });
+      const data = await r.json().catch(() => ({}));
+      if(!r.ok){ alert(data.error || 'delete failed'); return; }
+      await loadGuestbookEntries();
+    } catch (e){
+      alert('network error: ' + (e && e.message));
     }
   }
 
@@ -5037,6 +5104,38 @@
     hero.querySelector('.gh-msg').textContent = entry.message;
     hero.querySelector('.gh-meta').textContent =
       (entry.addressShort || shortAddr(entry.address)) + ' • ' + gbRelTime(entry.ts);
+    refreshVerifiedUI();
+  }
+
+  function refreshVerifiedUI(){
+    // Header buttons + hero CTAs reflect verified state so we don't keep
+    // showing "connect" once the user is already signed in.
+    const verified = isVerified();
+    const signBtn = $('#guestbook-hero-sign');
+    if(signBtn){
+      signBtn.textContent = verified ? '✍ Write' : '✍ Sign';
+      signBtn.title = verified ? 'Write a new entry' : 'Connect your wallet to sign';
+    }
+    const verifyBtn = $('#guestbook-verify-btn');
+    if(verifyBtn) verifyBtn.textContent = verified ? '✍ Write a new entry' : '✍ Sign the guestbook';
+    const profileConnect = $('#profile-connect');
+    if(profileConnect) profileConnect.hidden = verified;
+    // Show a small "connected as" pill in the header
+    let pill = document.querySelector('.connected-pill');
+    if(verified){
+      if(!pill){
+        pill = document.createElement('div');
+        pill.className = 'connected-pill';
+        pill.title = 'Click to open profile';
+        pill.addEventListener('click', openProfileModal);
+        const header = document.querySelector('.header.g');
+        header?.insertBefore(pill, $('#info-btn') || header.lastElementChild);
+      }
+      pill.textContent = shortAddr(verifyState.address || '');
+      pill.hidden = false;
+    } else if (pill){
+      pill.hidden = true;
+    }
   }
 
   function onGuestbookSignClick(){
@@ -5224,6 +5323,11 @@
     $('#guestbook-close')?.addEventListener('click', closeGuestbookModal);
     $('#guestbook-modal')?.addEventListener('click', e => {
       if(e.target.id === 'guestbook-modal') closeGuestbookModal();
+      const del = e.target.closest?.('[data-del]');
+      if(del){
+        e.preventDefault();
+        deleteGuestbookEntry(del.getAttribute('data-del'));
+      }
     });
     $('#guestbook-modal .xp-max')?.addEventListener('click', () => {
       document.querySelector('.guestbook-card')?.classList.toggle('xp-maximized');
@@ -5276,6 +5380,7 @@
 
     // Always render the hero strip + load latest entry in background.
     loadGuestbookEntries();
+    refreshVerifiedUI();
   }
 
   async function load(){
