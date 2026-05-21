@@ -1866,6 +1866,87 @@
   .xp-window::before{ display: none !important }
   .members-card.xp-window > .close{ display: none !important }
 
+  /* ── Guestbook ─────────────────────────────────────────── */
+  .guestbook-card{ max-width: 640px }
+  .guestbook-intro{
+    background: #f9efd5;
+    border: 1px solid #d8a890;
+    padding: 8px 10px;
+    margin-bottom: 10px;
+    font-family: 'VT323', monospace;
+    font-size: 14px;
+    color: #4a3a2a;
+    line-height: 1.35;
+  }
+  .guestbook-intro a{ color: #8b3a1e; text-decoration: underline }
+  .guestbook-sign{
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 10px; margin-bottom: 10px;
+    background: #fff7e4; border: 1px solid #d8a890;
+  }
+  .gb-btn{
+    font-family: 'VT323', monospace; font-size: 14px;
+    padding: 4px 12px; border: 1px solid #0a0f22;
+    background: linear-gradient(#fff, #e7d6b8);
+    color: #0a0f22; cursor: pointer;
+    box-shadow: 1px 1px 0 #0a0f22;
+  }
+  .gb-btn:hover{ background: linear-gradient(#fff, #d8c4a0) }
+  .gb-btn:active{ transform: translate(1px,1px); box-shadow: none }
+  .gb-btn-primary{ background: linear-gradient(#ffd98a, #ffb060); font-weight: bold }
+  .gb-btn-primary:hover{ background: linear-gradient(#ffe3a0, #ffa040) }
+  .gb-btn-cancel{ background: linear-gradient(#fff, #e0e0e0) }
+  .gb-btn:disabled{ opacity: .5; cursor: not-allowed }
+  .gb-hint{ font-family: 'VT323', monospace; font-size: 13px; color: #8b6a4a }
+  .guestbook-compose{
+    padding: 8px 10px; margin-bottom: 10px;
+    background: #fff7e4; border: 1px solid #d8a890;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .gb-verified{ display: flex; align-items: center; gap: 8px }
+  .gb-badge{
+    font-family: 'VT323', monospace; font-size: 12px;
+    background: #5fb763; color: #fff; padding: 1px 6px;
+    border: 1px solid #2a6a2a; text-transform: uppercase;
+  }
+  .gb-address{ font-family: 'VT323', monospace; font-size: 14px; color: #4a3a2a }
+  #guestbook-textarea{
+    width: 100%; min-height: 80px; resize: vertical;
+    font-family: 'VT323', monospace; font-size: 16px;
+    padding: 6px 8px; background: #fff;
+    border: 1px solid #b89a78; color: #0a0f22;
+  }
+  #guestbook-textarea:focus{ outline: none; border-color: #d8a890 }
+  .gb-compose-row{ display: flex; align-items: center; gap: 8px; justify-content: flex-end }
+  .gb-counter{ font-family: 'VT323', monospace; font-size: 13px; color: #8b6a4a; margin-right: auto }
+  .gb-error{
+    font-family: 'VT323', monospace; font-size: 14px;
+    color: #b22a2a; margin: 4px 0 0; padding: 4px 6px;
+    background: #ffe4e4; border: 1px solid #b22a2a;
+  }
+  .guestbook-list{ display: flex; flex-direction: column; gap: 8px }
+  .gb-entry{
+    background: #fffaec; border: 1px solid #d8a890;
+    padding: 8px 10px;
+    box-shadow: 1px 1px 0 rgba(10,15,34,.1);
+  }
+  .gb-entry-head{
+    display: flex; align-items: center; gap: 8px;
+    font-family: 'VT323', monospace; font-size: 13px;
+    color: #8b6a4a; margin-bottom: 4px;
+  }
+  .gb-entry-addr{ color: #4a3a2a; font-weight: bold }
+  .gb-entry-time{ margin-left: auto }
+  .gb-entry-msg{
+    font-family: 'VT323', monospace; font-size: 15px;
+    color: #0a0f22; white-space: pre-wrap; line-height: 1.35;
+    word-break: break-word;
+  }
+  .gb-loading, .gb-empty{
+    font-family: 'VT323', monospace; font-size: 14px;
+    color: #8b6a4a; text-align: center; padding: 12px;
+  }
+
   /* XP maximize state */
   .members-card.xp-window.xp-maximized{
     width: 98vw !important;
@@ -3122,6 +3203,19 @@
         <path d="M15 20c0-2 1.5-3.5 4-3.5s2 1.5 2 3.5"/>
       </svg>
     </button>
+    <button class="header-btn" id="guestbook-btn" type="button" aria-label="Guestbook" title="Guestbook — holders only">
+      <svg width="22" height="22" viewBox="0 0 10 10" shape-rendering="crispEdges" aria-hidden="true">
+        <g fill="currentColor">
+          <rect x="1" y="1" width="8" height="1"/>
+          <rect x="1" y="1" width="1" height="8"/>
+          <rect x="8" y="1" width="1" height="8"/>
+          <rect x="1" y="8" width="8" height="1"/>
+          <rect x="3" y="3" width="4" height="1"/>
+          <rect x="3" y="5" width="4" height="1"/>
+          <rect x="3" y="7" width="3" height="1"/>
+        </g>
+      </svg>
+    </button>
 
     <div class="gear" id="info-btn" title="About this archive" role="button" aria-label="About">
       <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
@@ -3418,6 +3512,68 @@
     <div class="xp-statusbar">
       <span class="xp-status-cell" id="xp-status-cell">ready</span>
       <span class="xp-status-cell xp-status-right">yume-os98</span>
+    </div>
+  </div>
+</div>
+
+<!-- Guestbook modal (XP-style window, holder-gated via nftroles) -->
+<div class="thread-modal" id="guestbook-modal" aria-hidden="true">
+  <div class="xp-window members-card guestbook-card" role="dialog" aria-modal="true">
+    <div class="xp-titlebar">
+      <div class="xp-title">
+        <span class="xp-icon" aria-hidden="true">
+          <svg viewBox="0 0 10 10" shape-rendering="crispEdges" width="16" height="16">
+            <g fill="#ffd98a"><rect x="1" y="1" width="8" height="8"/></g>
+            <g fill="#0a0f22">
+              <rect x="1" y="1" width="8" height="1"/>
+              <rect x="1" y="1" width="1" height="8"/>
+              <rect x="8" y="1" width="1" height="8"/>
+              <rect x="1" y="8" width="8" height="1"/>
+              <rect x="3" y="3" width="4" height="1"/>
+              <rect x="3" y="5" width="4" height="1"/>
+              <rect x="3" y="7" width="3" height="1"/>
+            </g>
+          </svg>
+        </span>
+        Guestbook
+      </div>
+      <div class="xp-buttons">
+        <button class="xp-btn xp-min" type="button" aria-label="Minimize">_</button>
+        <button class="xp-btn xp-max" type="button" aria-label="Maximize">◻</button>
+        <button class="xp-btn xp-close" id="guestbook-close" type="button" aria-label="Close">×</button>
+      </div>
+    </div>
+    <div class="xp-body">
+      <div class="guestbook-intro">
+        <p>Yume holders can leave a permanent message. Wallet check is handled by <a href="https://nftroles.xyz" target="_blank" rel="noopener">nftroles.xyz</a> — sign only, no transaction.</p>
+      </div>
+
+      <div class="guestbook-sign" id="guestbook-sign">
+        <button class="gb-btn gb-btn-primary" id="guestbook-verify-btn" type="button">✍ Sign the guestbook</button>
+        <span class="gb-hint" id="guestbook-hint">requires a Yume NFT</span>
+      </div>
+
+      <div class="guestbook-compose" id="guestbook-compose" hidden>
+        <div class="gb-verified">
+          <span class="gb-badge">verified</span>
+          <span class="gb-address" id="guestbook-verified-addr">—</span>
+        </div>
+        <textarea id="guestbook-textarea" maxlength="280" placeholder="Leave a message… (max 280 chars)"></textarea>
+        <div class="gb-compose-row">
+          <span class="gb-counter" id="guestbook-counter">0/280</span>
+          <button class="gb-btn gb-btn-cancel" id="guestbook-cancel" type="button">cancel</button>
+          <button class="gb-btn gb-btn-primary" id="guestbook-submit" type="button">post</button>
+        </div>
+        <p class="gb-error" id="guestbook-error" hidden></p>
+      </div>
+
+      <div class="guestbook-list" id="guestbook-list">
+        <div class="gb-loading">loading…</div>
+      </div>
+    </div>
+    <div class="xp-statusbar">
+      <span class="xp-status-cell" id="gb-status-cell">ready</span>
+      <span class="xp-status-cell xp-status-right" id="gb-total">— entries</span>
     </div>
   </div>
 </div>
@@ -4361,6 +4517,7 @@
         if($('#video-lightbox').classList.contains('open')) closeVideoLightbox();
         else if($('#lightbox').classList.contains('open')) closeLightbox();
         else if($('#gallery-modal').classList.contains('open')) closeGallery();
+        else if($('#guestbook-modal').classList.contains('open')) closeGuestbook();
         else if($('#about-modal').classList.contains('open')) closeAbout();
         else if($('#members-modal').classList.contains('open')) closeMembers();
         else closeThread();
@@ -4471,6 +4628,167 @@
       clearTimeout(mt);
       mt = setTimeout(() => renderMembersModal(e.target.value), 100);
     });
+
+    // ── Guestbook wiring ────────────────────────────────────
+    initGuestbook();
+  }
+
+  // ── Guestbook ────────────────────────────────────────────
+  const guestbookState = { token: null, address: null, popup: null, loaded: false };
+
+  function openGuestbook(){
+    document.body.style.overflow = 'hidden';
+    $('#guestbook-modal').classList.add('open');
+    $('#guestbook-modal').setAttribute('aria-hidden','false');
+    if(!guestbookState.loaded) loadGuestbookEntries();
+  }
+  function closeGuestbook(){
+    $('#guestbook-modal').classList.remove('open');
+    $('#guestbook-modal').setAttribute('aria-hidden','true');
+    if(!$('#members-modal').classList.contains('open') &&
+       !$('#about-modal').classList.contains('open') &&
+       !$('#gallery-modal')?.classList.contains('open')){
+      document.body.style.overflow = '';
+    }
+  }
+
+  function gbRelTime(iso){
+    const d = new Date(iso); const now = Date.now(); const s = Math.max(0,(now - d.getTime())/1000);
+    if(s < 60) return 'just now';
+    if(s < 3600) return Math.floor(s/60) + 'm ago';
+    if(s < 86400) return Math.floor(s/3600) + 'h ago';
+    if(s < 86400*30) return Math.floor(s/86400) + 'd ago';
+    return d.toISOString().slice(0,10);
+  }
+
+  function gbEscape(s){
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  }
+
+  function renderGuestbookEntries(entries, total){
+    const list = $('#guestbook-list');
+    if(!entries.length){
+      list.innerHTML = '<div class="gb-empty">no entries yet — be the first.</div>';
+    } else {
+      list.innerHTML = entries.map(e =>
+        '<div class="gb-entry">' +
+          '<div class="gb-entry-head">' +
+            '<span class="gb-entry-addr">' + gbEscape(e.addressShort || (e.address ? e.address.slice(0,6)+'…'+e.address.slice(-4) : '0x?')) + '</span>' +
+            '<span class="gb-entry-time">' + gbEscape(gbRelTime(e.ts)) + '</span>' +
+          '</div>' +
+          '<div class="gb-entry-msg">' + gbEscape(e.message) + '</div>' +
+        '</div>'
+      ).join('');
+    }
+    $('#gb-total').textContent = (total ?? entries.length) + ' entries';
+  }
+
+  async function loadGuestbookEntries(){
+    $('#gb-status-cell').textContent = 'loading…';
+    try{
+      const r = await fetch('/api/guestbook', { cache: 'no-store' });
+      if(!r.ok) throw new Error('failed to load (' + r.status + ')');
+      const data = await r.json();
+      renderGuestbookEntries(data.entries || [], data.total);
+      guestbookState.loaded = true;
+      $('#gb-status-cell').textContent = 'ready';
+    } catch (e){
+      $('#guestbook-list').innerHTML = '<div class="gb-empty">couldn\'t load entries: ' + gbEscape(e.message) + '</div>';
+      $('#gb-status-cell').textContent = 'error';
+    }
+  }
+
+  function openVerifyPopup(){
+    const url = 'https://nftroles.xyz/verify/yume';
+    const w = 460, h = 640;
+    const left = Math.round((window.outerWidth - w) / 2 + (window.screenX || 0));
+    const top = Math.round((window.outerHeight - h) / 2 + (window.screenY || 0));
+    const features = `width=${w},height=${h},left=${left},top=${top},menubar=no,toolbar=no,location=yes`;
+    guestbookState.popup = window.open(url, 'yume-verify', features);
+    if(!guestbookState.popup){
+      gbShowError('couldn\'t open the verify popup — check your browser\'s popup blocker.');
+      return;
+    }
+    $('#gb-status-cell').textContent = 'waiting for verify…';
+  }
+
+  function onVerifyMessage(ev){
+    if(ev.origin !== 'https://nftroles.xyz') return;
+    const data = ev.data;
+    if(!data || data.type !== 'yume-verify:success') return;
+    if(typeof data.token !== 'string') return;
+    guestbookState.token = data.token;
+    guestbookState.address = String(data.address || '').toLowerCase();
+    $('#gb-status-cell').textContent = 'verified';
+    $('#guestbook-sign').hidden = true;
+    $('#guestbook-compose').hidden = false;
+    const a = guestbookState.address;
+    $('#guestbook-verified-addr').textContent = a ? a.slice(0,6) + '…' + a.slice(-4) : 'verified';
+    try{ guestbookState.popup && guestbookState.popup.close(); } catch (_){ /* ignore */ }
+    $('#guestbook-textarea').focus();
+  }
+
+  function gbShowError(msg){
+    const el = $('#guestbook-error');
+    el.textContent = msg;
+    el.hidden = false;
+  }
+  function gbClearError(){ $('#guestbook-error').hidden = true }
+
+  function gbResetCompose(){
+    $('#guestbook-compose').hidden = true;
+    $('#guestbook-sign').hidden = false;
+    $('#guestbook-textarea').value = '';
+    $('#guestbook-counter').textContent = '0/280';
+    guestbookState.token = null;
+    guestbookState.address = null;
+    gbClearError();
+    $('#gb-status-cell').textContent = 'ready';
+  }
+
+  async function submitGuestbookEntry(){
+    gbClearError();
+    const message = $('#guestbook-textarea').value;
+    if(!message.trim()){ gbShowError('write a message first.'); return; }
+    if(!guestbookState.token){ gbShowError('verification expired — sign again.'); return; }
+    const submitBtn = $('#guestbook-submit');
+    submitBtn.disabled = true; submitBtn.textContent = 'posting…';
+    $('#gb-status-cell').textContent = 'posting…';
+    try{
+      const r = await fetch('/api/guestbook', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: guestbookState.token, message }),
+      });
+      const data = await r.json().catch(() => ({}));
+      if(!r.ok){ gbShowError(data.error || ('failed (' + r.status + ')')); $('#gb-status-cell').textContent = 'error'; return; }
+      gbResetCompose();
+      await loadGuestbookEntries();
+    } catch (e){
+      gbShowError('network error: ' + (e && e.message));
+      $('#gb-status-cell').textContent = 'error';
+    } finally {
+      submitBtn.disabled = false; submitBtn.textContent = 'post';
+    }
+  }
+
+  function initGuestbook(){
+    $('#guestbook-btn')?.addEventListener('click', openGuestbook);
+    $('#guestbook-close')?.addEventListener('click', closeGuestbook);
+    $('#guestbook-modal')?.addEventListener('click', e => {
+      if(e.target.id === 'guestbook-modal') closeGuestbook();
+    });
+    $('#guestbook-modal .xp-max')?.addEventListener('click', () => {
+      document.querySelector('.guestbook-card')?.classList.toggle('xp-maximized');
+    });
+    $('#guestbook-modal .xp-min')?.addEventListener('click', closeGuestbook);
+    $('#guestbook-verify-btn')?.addEventListener('click', openVerifyPopup);
+    $('#guestbook-cancel')?.addEventListener('click', gbResetCompose);
+    $('#guestbook-submit')?.addEventListener('click', submitGuestbookEntry);
+    $('#guestbook-textarea')?.addEventListener('input', e => {
+      $('#guestbook-counter').textContent = (e.target.value.length) + '/280';
+    });
+    window.addEventListener('message', onVerifyMessage);
   }
 
   async function load(){
