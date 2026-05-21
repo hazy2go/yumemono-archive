@@ -87,15 +87,11 @@ export default async function handler(req, res) {
 
   try {
     const result = await put(pathname, parsed.file.data, {
-      access: 'private',
+      access: 'public',
       contentType: parsed.file.contentType,
       addRandomSuffix: false,
     });
-    res.status(200).json({
-      url: result.url,
-      downloadUrl: result.downloadUrl,
-      contentType: parsed.file.contentType,
-    });
+    res.status(200).json({ url: result.url, contentType: parsed.file.contentType });
   } catch (e) {
     res.status(500).json({ error: e?.message || 'upload failed' });
   }
