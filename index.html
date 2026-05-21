@@ -1868,23 +1868,6 @@
   .xp-window::before{ display: none !important }
   .members-card.xp-window > .close{ display: none !important }
 
-  /* ── Connected-as pill in header ───────────────────────── */
-  .connected-pill{
-    display: inline-flex; align-items: center;
-    height: 32px; padding: 0 10px;
-    margin: 0 4px;
-    background: #fff7e4; border: 1.5px solid #0a0f22;
-    box-shadow: 1px 1px 0 #0a0f22;
-    font-family: 'VT323', monospace; font-size: 13px; color: #0a0f22;
-    cursor: pointer;
-  }
-  .connected-pill::before{
-    content: ''; width: 7px; height: 7px; border-radius: 50%;
-    background: #5fb763; box-shadow: 0 0 4px #5fb763;
-    margin-right: 6px;
-  }
-  .connected-pill:hover{ background: #ffe7c0 }
-
   /* ── Guestbook hero strip ──────────────────────────────── */
   .gb-hero{
     display: flex; align-items: center; gap: 12px;
@@ -3320,16 +3303,6 @@
       </div>
     </div>
 
-    <button class="header-btn header-btn-profile" id="profile-btn" type="button" aria-label="Profile" title="Profile — holders only">
-      <svg width="22" height="22" viewBox="0 0 10 10" shape-rendering="crispEdges" aria-hidden="true">
-        <g fill="currentColor">
-          <rect x="3" y="1" width="4" height="1"/>
-          <rect x="2" y="2" width="6" height="2"/>
-          <rect x="3" y="4" width="4" height="1"/>
-          <rect x="1" y="6" width="8" height="3"/>
-        </g>
-      </svg>
-    </button>
     <button class="header-btn header-btn-gallery" id="gallery-btn" type="button" aria-label="Gallery" title="Gallery — all media">
       <svg width="22" height="22" viewBox="0 0 10 10" shape-rendering="crispEdges" aria-hidden="true">
         <g fill="currentColor">
@@ -3346,6 +3319,16 @@
         <circle cx="17" cy="10" r="2.4"/>
         <path d="M3 20c0-3 2.5-5 6-5s6 2 6 5"/>
         <path d="M15 20c0-2 1.5-3.5 4-3.5s2 1.5 2 3.5"/>
+      </svg>
+    </button>
+    <button class="header-btn header-btn-profile" id="profile-btn" type="button" aria-label="Profile" title="Profile — holders only">
+      <svg width="22" height="22" viewBox="0 0 10 10" shape-rendering="crispEdges" aria-hidden="true">
+        <g fill="currentColor">
+          <rect x="3" y="1" width="4" height="1"/>
+          <rect x="2" y="2" width="6" height="2"/>
+          <rect x="3" y="4" width="4" height="1"/>
+          <rect x="1" y="6" width="8" height="3"/>
+        </g>
       </svg>
     </button>
 
@@ -5108,8 +5091,8 @@
   }
 
   function refreshVerifiedUI(){
-    // Header buttons + hero CTAs reflect verified state so we don't keep
-    // showing "connect" once the user is already signed in.
+    // Sign-in CTAs reflect verified state so we don't keep prompting
+    // "connect" once the user is already signed in.
     const verified = isVerified();
     const signBtn = $('#guestbook-hero-sign');
     if(signBtn){
@@ -5120,22 +5103,6 @@
     if(verifyBtn) verifyBtn.textContent = verified ? '✍ Write a new entry' : '✍ Sign the guestbook';
     const profileConnect = $('#profile-connect');
     if(profileConnect) profileConnect.hidden = verified;
-    // Show a small "connected as" pill in the header
-    let pill = document.querySelector('.connected-pill');
-    if(verified){
-      if(!pill){
-        pill = document.createElement('div');
-        pill.className = 'connected-pill';
-        pill.title = 'Click to open profile';
-        pill.addEventListener('click', openProfileModal);
-        const header = document.querySelector('.header.g');
-        header?.insertBefore(pill, $('#info-btn') || header.lastElementChild);
-      }
-      pill.textContent = shortAddr(verifyState.address || '');
-      pill.hidden = false;
-    } else if (pill){
-      pill.hidden = true;
-    }
   }
 
   function onGuestbookSignClick(){
