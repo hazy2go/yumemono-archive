@@ -95,6 +95,8 @@ export default async function handler(req, res){
     try { address = await verifyTokenAddress(token); }
     catch { address = null; }
     if (!address){ res.status(401).json({ error: 'token invalid or expired' }); return; }
+    // Track unique verified holders for /api/stats (fire-and-forget).
+    kv('SADD', 'verified:addresses', address).catch(() => {});
 
     // displayName-only update
     if (typeof body.displayName === 'string' && body.tokenId === undefined && body.image === undefined){

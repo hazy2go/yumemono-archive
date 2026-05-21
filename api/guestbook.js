@@ -213,6 +213,9 @@ export default async function handler(req, res) {
 
   const address = String(verify.address).toLowerCase();
 
+  // Track unique verified holders for /api/stats counter (fire-and-forget).
+  kv('SADD', 'verified:addresses', address).catch(() => {});
+
   const gateKey = `guestbook:rl:${address}`;
   const isAdmin = ADMIN_ADDRESSES.has(address);
   if (!isAdmin) {

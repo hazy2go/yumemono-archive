@@ -1870,6 +1870,40 @@
   .xp-window::before{ display: none !important }
   .members-card.xp-window > .close{ display: none !important }
 
+  /* ── Verified counter badge in header ──────────────────── */
+  .verified-badge{
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 4px 10px;
+    background: linear-gradient(180deg, #fff7e4 0%, #ffd98a 100%);
+    border: 1.5px solid #0a0f22;
+    box-shadow: 1px 1px 0 #0a0f22, inset 0 1px 0 rgba(255,255,255,.8);
+    font-family: 'VT323', monospace; color: #0a0f22;
+    line-height: 1;
+  }
+  .verified-badge .vb-sparkle{
+    color: #b87810; font-size: 14px;
+    animation: vbSparkle 2.4s ease-in-out infinite;
+    display: inline-block;
+  }
+  @keyframes vbSparkle{
+    0%, 100% { transform: scale(1) rotate(0deg); opacity: .85 }
+    50%      { transform: scale(1.25) rotate(20deg); opacity: 1 }
+  }
+  .verified-badge .vb-count{
+    font-size: 18px; font-weight: bold; color: #0a0f22;
+    min-width: 14px; text-align: center;
+    transition: color .2s;
+  }
+  .verified-badge .vb-count.pop{ color: #5fb763 }
+  .verified-badge .vb-label{
+    font-size: 11px; text-transform: uppercase; letter-spacing: .04em;
+    color: #6a4a2a;
+  }
+  @media (max-width: 720px){
+    .verified-badge .vb-label{ display: none }
+    .verified-badge{ padding: 4px 8px }
+  }
+
   /* ── Guestbook hero strip ──────────────────────────────── */
   .gb-hero{
     display: flex; align-items: center; gap: 12px;
@@ -3404,6 +3438,12 @@
       <div class="search-btn">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><circle cx="11" cy="11" r="6"/><path d="m20 20-4.5-4.5"/></svg>
       </div>
+    </div>
+
+    <div class="verified-badge" id="verified-badge" title="Yume holders who've signed in" aria-live="polite">
+      <span class="vb-sparkle" aria-hidden="true">✦</span>
+      <span class="vb-count" id="verified-count">—</span>
+      <span class="vb-label">verified</span>
     </div>
 
     <button class="header-btn header-btn-gallery" id="gallery-btn" type="button" aria-label="Gallery" title="Gallery — all media">
@@ -5806,10 +5846,39 @@
     // Always render the hero strip + load latest entry in background.
     loadGuestbookEntries();
     refreshVerifiedUI();
+    startVerifiedCounter();
 
     // Path-based routing: /profile, /profile/0xADDR, /guestbook
     handleRouting();
     window.addEventListener('popstate', handleRouting);
+  }
+
+  // Verified-holders counter — polls /api/stats, pops the number when it
+  // ticks up.
+  let _verifiedCount = null;
+  async function fetchVerifiedCount(){
+    try{
+      const r = await fetch('/api/stats', { cache: 'no-store' });
+      if(!r.ok) return;
+      const data = await r.json();
+      const n = Number(data.verified || 0);
+      const el = $('#verified-count');
+      if(!el) return;
+      if(_verifiedCount !== null && n > _verifiedCount){
+        el.classList.add('pop');
+        setTimeout(() => el.classList.remove('pop'), 800);
+      }
+      _verifiedCount = n;
+      el.textContent = n;
+    } catch (_){ /* ignore */ }
+  }
+  function startVerifiedCounter(){
+    fetchVerifiedCount();
+    setInterval(fetchVerifiedCount, 60_000);
+    // Also refresh on tab refocus.
+    document.addEventListener('visibilitychange', () => {
+      if(document.visibilityState === 'visible') fetchVerifiedCount();
+    });
   }
 
   function handleRouting(){
