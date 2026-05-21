@@ -1,17 +1,16 @@
 // Vercel Node Function: /api/blob-upload
 // Server-side proxy upload: client POSTs multipart/form-data with
 // { token, file }, server verifies the token, uploads to Vercel Blob via
-// the server SDK, and returns the public URL.
+// the server SDK, returns the public URL.
 //
-// Note: Vercel Functions limit request body to 4.5MB by default. Bigger
-// files will need a different path (Blob client SDK + delegation, or
-// chunked uploads). We enforce that limit explicitly here.
+// Vercel functions limit request body to ~4.5MB; we cap files at 4MB.
 
 import { put } from '@vercel/blob';
+import Busboy from 'busboy';
 
 const VERIFY_URL = 'https://nftroles.xyz/api/public/verify/check';
 const YUME_COLLECTION = '0x7011ee079f579eb313012bddb92fd6f06fa43335';
-const MAX_BYTES = 4 * 1024 * 1024; // 4 MB to stay safely under Vercel's 4.5MB cap
+const MAX_BYTES = 4 * 1024 * 1024;
 const ALLOWED_CONTENT_TYPES = new Set([
   'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/avif',
   'video/mp4', 'video/webm', 'video/quicktime',
@@ -29,59 +28,31 @@ async function getVerifiedAddress(token) {
   return String(data.address || '').toLowerCase();
 }
 
-async function readRequestBody(req) {
-  return await new Promise((resolve, reject) => {
-    const chunks = [];
-    let size = 0;
-    req.on('data', (c) => {
-      size += c.length;
-      if (size > MAX_BYTES + 1024) {
-        reject(Object.assign(new Error('file too large (max 4 MB)'), { status: 413 }));
-        return;
-      }
-      chunks.push(c);
+function parseMultipart(req) {
+  return new Promise((resolve, reject) => {
+    const bb = Busboy({
+      headers: req.headers,
+      limits: { fileSize: MAX_BYTES, files: 1, fields: 5, fieldSize: 8192 },
     });
-    req.on('end', () => resolve(Buffer.concat(chunks)));
-    req.on('error', reject);
+    const fields = {};
+    let file = null;
+    let fileTooBig = false;
+    bb.on('field', (name, val) => { fields[name] = val; });
+    bb.on('file', (name, stream, info) => {
+      const chunks = [];
+      stream.on('data', (c) => chunks.push(c));
+      stream.on('limit', () => { fileTooBig = true; stream.resume(); });
+      stream.on('end', () => {
+        file = { name: info.filename, contentType: info.mimeType, data: Buffer.concat(chunks) };
+      });
+    });
+    bb.on('close', () => {
+      if (fileTooBig) return reject(Object.assign(new Error('file too large (max 4 MB)'), { status: 413 }));
+      resolve({ fields, file });
+    });
+    bb.on('error', reject);
+    req.pipe(bb);
   });
-}
-
-// Parse a simple single-file multipart/form-data body. Expects fields:
-//   token: <string>
-//   file: <binary blob>
-function parseMultipart(buf, boundary) {
-  const sep = Buffer.from('--' + boundary);
-  const closing = Buffer.from('--' + boundary + '--');
-  const out = { token: '', file: null, filename: '', contentType: '' };
-  let i = 0;
-  while (i < buf.length) {
-    const start = buf.indexOf(sep, i);
-    if (start === -1) break;
-    let end = buf.indexOf(sep, start + sep.length);
-    if (end === -1) end = buf.indexOf(closing, start + sep.length);
-    if (end === -1) break;
-    const partRaw = buf.slice(start + sep.length, end);
-    // \r\n at the start, \r\n at the end of part body
-    const headerEnd = partRaw.indexOf('\r\n\r\n');
-    if (headerEnd === -1) { i = end; continue; }
-    const headers = partRaw.slice(0, headerEnd).toString('utf8');
-    const body = partRaw.slice(headerEnd + 4, partRaw.length - 2); // strip trailing \r\n
-    const dispMatch = headers.match(/Content-Disposition:[^\r\n]*name="([^"]+)"(?:;\s*filename="([^"]*)")?/i);
-    if (!dispMatch) { i = end; continue; }
-    const fieldName = dispMatch[1];
-    const filename = dispMatch[2] || '';
-    const ctMatch = headers.match(/Content-Type:\s*([^\r\n]+)/i);
-    const contentType = ctMatch ? ctMatch[1].trim() : '';
-    if (filename) {
-      out.file = body;
-      out.filename = filename;
-      out.contentType = contentType;
-    } else {
-      out[fieldName] = body.toString('utf8');
-    }
-    i = end;
-  }
-  return out;
 }
 
 export default async function handler(req, res) {
@@ -91,42 +62,36 @@ export default async function handler(req, res) {
     return;
   }
 
-  const ct = req.headers['content-type'] || '';
-  const m = ct.match(/multipart\/form-data;\s*boundary=(.+)$/i);
-  if (!m) { res.status(400).json({ error: 'expected multipart/form-data' }); return; }
-  const boundary = m[1].trim().replace(/^"|"$/g, '');
-
-  let body;
+  let parsed;
   try {
-    body = await readRequestBody(req);
+    parsed = await parseMultipart(req);
   } catch (e) {
-    res.status(e.status || 500).json({ error: e.message });
+    res.status(e.status || 400).json({ error: e.message || 'bad multipart body' });
     return;
   }
 
-  const parsed = parseMultipart(body, boundary);
   if (!parsed.file) { res.status(400).json({ error: 'no file field' }); return; }
-  if (parsed.file.length > MAX_BYTES) { res.status(413).json({ error: 'file too large (max 4 MB)' }); return; }
-  if (!ALLOWED_CONTENT_TYPES.has(parsed.contentType)) {
-    res.status(400).json({ error: 'unsupported content-type: ' + (parsed.contentType || 'unknown') });
+  if (parsed.file.data.length > MAX_BYTES) { res.status(413).json({ error: 'file too large (max 4 MB)' }); return; }
+  if (!ALLOWED_CONTENT_TYPES.has(parsed.file.contentType)) {
+    res.status(400).json({ error: 'unsupported content-type: ' + (parsed.file.contentType || 'unknown') });
     return;
   }
 
   let address;
-  try { address = await getVerifiedAddress(parsed.token); }
+  try { address = await getVerifiedAddress(parsed.fields.token); }
   catch { address = null; }
   if (!address) { res.status(401).json({ error: 'verification required (yume holder only)' }); return; }
 
-  const safeName = (parsed.filename || 'file').replace(/[^a-zA-Z0-9._-]+/g, '_').slice(0, 80);
+  const safeName = (parsed.file.name || 'file').replace(/[^a-zA-Z0-9._-]+/g, '_').slice(0, 80);
   const pathname = `guestbook/${address}/${Date.now()}-${safeName}`;
 
   try {
-    const result = await put(pathname, parsed.file, {
+    const result = await put(pathname, parsed.file.data, {
       access: 'public',
-      contentType: parsed.contentType,
+      contentType: parsed.file.contentType,
       addRandomSuffix: false,
     });
-    res.status(200).json({ url: result.url, contentType: parsed.contentType });
+    res.status(200).json({ url: result.url, contentType: parsed.file.contentType });
   } catch (e) {
     res.status(500).json({ error: e?.message || 'upload failed' });
   }

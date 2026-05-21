@@ -7,7 +7,8 @@
     "build:blob-client": "node scripts/bundle-blob-client.mjs"
   },
   "dependencies": {
-    "@vercel/blob": "^2.4.0"
+    "@vercel/blob": "^2.4.0",
+    "busboy": "^1.6.0"
   },
   "devDependencies": {
     "esbuild": "^0.28.0"
