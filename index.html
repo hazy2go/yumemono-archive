@@ -5200,14 +5200,17 @@
     }
     const clientToken = tokenData.clientToken;
 
-    // Step 2: PUT the file directly to the blob endpoint.
+    // Step 2: PUT the file directly to the blob endpoint. Pathname is a
+    // query param (not a path segment) per Vercel Blob's protocol.
     return await new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
-      const url = BLOB_API_URL + '/' + encodeURI(pathname).replace(/#/g, '%23');
+      const url = BLOB_API_URL + '/?pathname=' + encodeURIComponent(pathname);
       xhr.open('PUT', url, true);
       xhr.setRequestHeader('Authorization', 'Bearer ' + clientToken);
+      xhr.setRequestHeader('x-api-version', '9');
+      xhr.setRequestHeader('x-api-blob-request-attempt', '0');
+      xhr.setRequestHeader('x-content-length', String(file.size || 0));
       if (contentType) xhr.setRequestHeader('x-content-type', contentType);
-      xhr.setRequestHeader('x-api-blob-request-attempt', '1');
       xhr.upload.onprogress = (e) => {
         if (e.lengthComputable && typeof onProgress === 'function') {
           onProgress(Math.min(100, (e.loaded / e.total) * 100));
