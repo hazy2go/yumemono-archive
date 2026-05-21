@@ -3,9 +3,9 @@
   "cleanUrls": true,
   "rewrites": [
     { "source": "/v/:id", "destination": "/api/v/:id" },
-    { "source": "/guestbook", "destination": "/index.html" },
-    { "source": "/profile", "destination": "/index.html" },
-    { "source": "/profile/:address", "destination": "/index.html" }
+    { "source": "/guestbook", "destination": "/" },
+    { "source": "/profile", "destination": "/" },
+    { "source": "/profile/:address", "destination": "/" }
   ],
   "headers": [
     {
