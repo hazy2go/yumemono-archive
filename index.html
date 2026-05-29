@@ -861,6 +861,30 @@
   .thread-card .close:hover{ background: linear-gradient(180deg, #fff, #9fd0ff) }
   .thread-card .msg{ cursor:default }
 
+  /* Thread tree: indentation + connector lines */
+  .thread-tree{ display:flex; flex-direction:column; gap:12px; padding:0 }
+  .thread-tree .msg{ position:relative; transition:none }
+  .thread-tree .msg[data-depth="1"]{ margin-left:24px; border-left:3px solid rgba(110,90,160,.45) !important }
+  .thread-tree .msg[data-depth="2"]{ margin-left:48px; border-left:3px solid rgba(70,130,180,.45) !important }
+  .thread-tree .msg[data-depth="3"]{ margin-left:72px; border-left:3px solid rgba(60,155,110,.45) !important }
+  .thread-tree .msg[data-depth="4"]{ margin-left:96px; border-left:3px solid rgba(180,120,60,.45) !important }
+  .thread-tree .msg[data-depth="5"],
+  .thread-tree .msg[data-depth="6"],
+  .thread-tree .msg[data-depth="7"],
+  .thread-tree .msg[data-depth="8"]{ margin-left:96px; border-left:3px solid rgba(160,80,120,.45) !important }
+  .tree-toggle{
+    position:absolute; top:8px; right:8px; z-index:2;
+    padding:1px 7px 2px; font-size:13px; line-height:1.4;
+    font-family:'VT323',monospace; color:var(--cream);
+    background: linear-gradient(180deg, rgba(100,85,150,.85), rgba(55,48,100,.95));
+    border: 2px solid var(--aero-ink);
+    box-shadow: 2px 2px 0 var(--aero-ink), inset 0 1px 0 rgba(255,255,255,.18);
+    cursor:pointer; user-select:none; letter-spacing:.5px;
+  }
+  .tree-toggle:hover{ transform:translate(-1px,-1px); box-shadow:3px 3px 0 var(--aero-ink), inset 0 1px 0 rgba(255,255,255,.18) }
+  .tree-toggle:active{ transform:translate(1px,1px); box-shadow:1px 1px 0 var(--aero-ink) }
+  .thread-tree .msg[data-collapsed="1"] .tree-toggle{ background: linear-gradient(180deg, rgba(160,130,60,.85), rgba(100,80,30,.95)) }
+
   @media (max-width: 980px){
     .header{ grid-template-columns: 1fr auto !important; grid-auto-rows:auto }
     .navpills, .search{ grid-column: 1 / -1 }
@@ -4382,7 +4406,7 @@
     return ` <span class="kind-badge ${escapeHtml(kind)}">${label}</span>`;
   }
 
-  function postHTML(p, authorMap, {showThread=true, inThread=false}={}){
+  function postHTML(p, authorMap, {showThread=true, inThread=false, treeDepth=0, treeHasChildren=false}={}){
     const a = authorMap.get(p.author);
     const display = a ? (a.name || a.handle) : (p.author || 'unknown');
     const handle = p.author ? `@${p.author}` : '';
@@ -4394,8 +4418,13 @@
         <svg viewBox="0 0 24 24"><path d="M21 15a4 4 0 0 1-4 4H8l-5 4V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"/></svg>
         ${fmt(replyCount)} ${replyCount === 1 ? 'reply' : 'replies'}
       </div>` : '';
+    const depthAttr = inThread && treeDepth > 0 ? ` data-depth="${treeDepth}"` : '';
+    const treeToggle = inThread && treeHasChildren
+      ? `<button class="tree-toggle" title="Collapse replies" onclick="event.stopPropagation();toggleTreeNode(this)">▼ replies</button>`
+      : '';
     return `
-      <div class="msg" data-id="${escapeHtml(p.id)}" ${openable?'data-thread="1"':''}>
+      <div class="msg" data-id="${escapeHtml(p.id)}" ${openable?'data-thread="1"':''}${depthAttr}>
+        ${treeToggle}
         ${avatarHTML(a)}
         <div>
           <div class="row">
@@ -4653,15 +4682,53 @@
     $('#hero-sub').textContent = `${fmt(s.posts_total)} posts from ${fmt(s.authors_total)} members, preserved ${earliest} → ${latest}.`;
   }
 
+  function toggleTreeNode(btn){
+    const msg = btn.closest('.msg');
+    const depth = parseInt(msg.dataset.depth || '0');
+    const isCollapsed = msg.dataset.collapsed === '1';
+    msg.dataset.collapsed = isCollapsed ? '0' : '1';
+    btn.textContent = isCollapsed ? '▼ replies' : '▶ replies';
+    let el = msg.nextElementSibling;
+    while(el && el.classList.contains('msg')){
+      const elDepth = parseInt(el.dataset.depth || '0');
+      if(elDepth <= depth) break;
+      el.style.display = isCollapsed ? '' : 'none';
+      el = el.nextElementSibling;
+    }
+  }
+
+  function buildThreadTree(posts){
+    const sorted = posts.slice().sort((a,b) => (a.ts||0)-(b.ts||0));
+    const postSet = new Set(sorted.map(p => p.id));
+    const childrenOf = new Map();
+    sorted.forEach(p => {
+      const pid = p.parent && postSet.has(p.parent) ? p.parent : null;
+      if(!childrenOf.has(pid)) childrenOf.set(pid, []);
+      childrenOf.get(pid).push(p);
+    });
+    const result = [];
+    function walk(parentId, depth){
+      (childrenOf.get(parentId)||[]).forEach(p => {
+        result.push({post:p, depth, hasChildren:(childrenOf.get(p.id)||[]).length>0});
+        walk(p.id, depth+1);
+      });
+    }
+    walk(null, 0);
+    return result;
+  }
+
   function openThread(postId){
     const post = state.postById.get(postId);
     if(!post) return;
     const convId = post.conv || post.id;
-    const thread = (state.byConv.get(convId) || [post]).slice().sort((a,b) => (a.ts||0) - (b.ts||0));
+    const allPosts = state.byConv.get(convId) || [post];
+    const tree = buildThreadTree(allPosts);
     const authorMap = new Map(state.authors.map(a => [a.handle, a]));
-    $('#thread-title').textContent = `Conversation · ${fmt(thread.length)} ${thread.length === 1 ? 'post' : 'posts'}`;
-    $('#thread-body').innerHTML = '<div class="msgs" style="padding:0">' +
-      thread.map(p => postHTML(p, authorMap, {showThread:false, inThread:true})).join('') + '</div>';
+    $('#thread-title').textContent = `Conversation · ${fmt(allPosts.length)} ${allPosts.length === 1 ? 'post' : 'posts'}`;
+    $('#thread-body').innerHTML = '<div class="thread-tree" style="padding:0">' +
+      tree.map(({post:p, depth, hasChildren}) =>
+        postHTML(p, authorMap, {showThread:false, inThread:true, treeDepth:depth, treeHasChildren:hasChildren})
+      ).join('') + '</div>';
     $('#thread-modal').classList.add('open');
     $('#thread-modal').setAttribute('aria-hidden','false');
     document.body.style.overflow = 'hidden';
