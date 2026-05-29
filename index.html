@@ -3652,7 +3652,7 @@
 </div>
 
 <!-- Thread / conversation modal -->
-<div class="thread-modal" id="thread-modal" aria-hidden="true">
+<div class="thread-modal" id="thread-modal" inert>
   <div class="thread-card g" role="dialog" aria-modal="true" aria-label="Conversation thread">
     <span class="close" id="thread-close" aria-label="Close"><span aria-hidden="true">×</span></span>
     <h3 id="thread-title">Conversation</h3>
@@ -3661,7 +3661,7 @@
 </div>
 
 <!-- Image lightbox -->
-<div class="lightbox" id="lightbox" aria-hidden="true">
+<div class="lightbox" id="lightbox" inert>
   <button class="lb-download" id="lb-download" type="button" aria-label="Download">
     <svg viewBox="0 0 10 10" shape-rendering="crispEdges" width="22" height="22" aria-hidden="true">
       <g fill="currentColor">
@@ -3686,7 +3686,7 @@
 </div>
 
 <!-- Video lightbox (fit-to-viewport with native fullscreen button) -->
-<div class="lightbox video-lightbox" id="video-lightbox" aria-hidden="true">
+<div class="lightbox video-lightbox" id="video-lightbox" inert>
   <button class="lb-download" id="vlb-download" type="button" aria-label="Download">
     <svg viewBox="0 0 10 10" shape-rendering="crispEdges" width="22" height="22" aria-hidden="true">
       <g fill="currentColor">
@@ -3714,7 +3714,7 @@
 </div>
 
 <!-- Gallery window (all media) -->
-<div class="thread-modal" id="gallery-modal" aria-hidden="true">
+<div class="thread-modal" id="gallery-modal" inert>
   <div class="xp-window gallery-card" role="dialog" aria-modal="true" aria-label="Gallery — all media">
     <div class="xp-titlebar">
       <div class="xp-title">
@@ -3749,7 +3749,7 @@
 </div>
 
 <!-- About / info modal (XP-style window) -->
-<div class="thread-modal" id="about-modal" aria-hidden="true">
+<div class="thread-modal" id="about-modal" inert>
   <div class="xp-window about-card" role="dialog" aria-modal="true" aria-label="About this archive">
     <div class="xp-titlebar">
       <div class="xp-title">
@@ -3805,7 +3805,7 @@
       <h5 class="about-section-h">◆ archivist</h5>
       <div class="about-archivist">
         <div class="av av-sky archivist-av" aria-hidden="true">
-          <img src="https://pbs.twimg.com/profile_images/1994289685129310208/6lJZFwV5_400x400.jpg" alt="" referrerpolicy="no-referrer"
+          <img src="https://pbs.twimg.com/profile_images/1994289685129310208/6lJZFwV5_400x400.jpg" alt="hazy, the archivist" width="56" height="56" referrerpolicy="no-referrer"
                onerror="this.parentElement.classList.add('placeholder');this.parentElement.textContent='h'"/>
         </div>
         <div style="min-width:0">
@@ -3834,7 +3834,7 @@
 </div>
 
 <!-- Members modal (XP-style window) -->
-<div class="thread-modal" id="members-modal" aria-hidden="true">
+<div class="thread-modal" id="members-modal" inert>
   <div class="xp-window members-card" role="dialog" aria-modal="true" aria-label="Community members">
     <div class="xp-titlebar">
       <div class="xp-title">
@@ -3869,7 +3869,7 @@
 </div>
 
 <!-- Guestbook modal (XP-style window, holder-gated via nftroles) -->
-<div class="thread-modal" id="guestbook-modal" aria-hidden="true">
+<div class="thread-modal" id="guestbook-modal" inert>
   <div class="xp-window members-card guestbook-card" role="dialog" aria-modal="true" aria-label="Guestbook">
     <div class="xp-titlebar">
       <div class="xp-title">
@@ -3936,7 +3936,7 @@
 </div>
 
 <!-- Profile modal (XP-style window, holder-gated via nftroles) -->
-<div class="thread-modal" id="profile-modal" aria-hidden="true">
+<div class="thread-modal" id="profile-modal" inert>
   <div class="xp-window members-card profile-card" role="dialog" aria-modal="true" aria-label="Your guestbook profile">
     <div class="xp-titlebar">
       <div class="xp-title">
@@ -5003,23 +5003,23 @@
     $('#msgs').addEventListener('click', onFeedClick);
     $('#thread-body').addEventListener('click', onFeedClick);
 
-    // a11y: a closed overlay must not expose focusable controls. We use `inert`
-    // (which implies aria-hidden semantics for AT) instead of aria-hidden, and
-    // strip any aria-hidden="true" the open/close code sets — otherwise a
-    // focusable button living inside an aria-hidden subtree is an a11y violation.
+    // a11y: a closed overlay must not expose focusable controls. The static HTML
+    // marks overlays `inert` (closed); we drive inert off the `.open` class — the
+    // real visibility source — and strip any aria-hidden the open/close code sets,
+    // since a focusable control inside an aria-hidden subtree is a violation.
     (function syncModalInert(){
       const overlays = document.querySelectorAll('.thread-modal, .lightbox');
       const apply = el => {
-        if(el.getAttribute('aria-hidden') === 'true'){
-          el.setAttribute('inert','');
-          el.removeAttribute('aria-hidden'); // inert covers AT-hiding; avoids focusable-in-aria-hidden
-        } else {
+        if(el.classList.contains('open')){
           el.removeAttribute('inert');
+        } else {
+          el.setAttribute('inert','');
+          el.removeAttribute('aria-hidden'); // inert already hides from AT
         }
       };
       overlays.forEach(el => {
         apply(el);
-        new MutationObserver(() => apply(el)).observe(el, {attributes:true, attributeFilter:['aria-hidden']});
+        new MutationObserver(() => apply(el)).observe(el, {attributes:true, attributeFilter:['class','aria-hidden']});
       });
     })();
 
