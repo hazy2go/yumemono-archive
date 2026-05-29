@@ -4,6 +4,8 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="theme-color" content="#e8bccd" />
+<meta name="description" content="A community-preserved archive of the Yumemono X community — 7,500+ posts, 900+ members, and 1,290+ media items mirrored to durable storage, browsable in a pixel-art Yume-OS aesthetic." />
+<link rel="canonical" href="https://yumemono.xyz/" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -15,7 +17,7 @@
 <meta property="og:title" content="Yumemono Archive — 夢物" />
 <meta property="og:description" content="A preservation of the Yumemono X community: 7,423 posts, 903 members, 1,266 media items mirrored to durable storage." />
 <meta property="og:type" content="website" />
-<meta property="og:url" content="https://yumemono-archive.vercel.app/" />
+<meta property="og:url" content="https://yumemono.xyz/" />
 <meta property="og:image" content="https://yumemono-archive.vercel.app/og.png?v=2" />
 <meta property="og:image:width" content="1734" />
 <meta property="og:image:height" content="907" />
@@ -23,7 +25,7 @@
 <meta name="twitter:title" content="Yumemono Archive — 夢物" />
 <meta name="twitter:description" content="A preservation of the Yumemono X community: 7,423 posts, 903 members, 1,266 media items mirrored to durable storage." />
 <meta name="twitter:image" content="https://yumemono-archive.vercel.app/og.png?v=2" />
-<title>Yumemono Archive</title>
+<title>Yumemono Archive — 夢物 X Community Preservation</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=VT323&family=M+PLUS+Rounded+1c:wght@400;500;700&display=swap" rel="stylesheet">
@@ -36,6 +38,29 @@
   }
   *{box-sizing:border-box}
   html,body{margin:0;padding:0;min-height:100%}
+  /* Visually-hidden (screen-reader only) */
+  .sr-only{
+    position:absolute !important; width:1px; height:1px; padding:0; margin:-1px;
+    overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0;
+  }
+  /* Skip-to-content link — hidden until focused */
+  .skip-link{
+    position:fixed; top:-60px; left:8px; z-index:200;
+    padding:8px 14px; font-family:'VT323',monospace; font-size:16px;
+    color:#fff6e6; background:linear-gradient(180deg,#3e578f,#0a2d5c);
+    border:2px solid #0a0f22; box-shadow:2px 2px 0 #0a0f22; text-decoration:none;
+    transition:top .12s ease;
+  }
+  .skip-link:focus{ top:8px; outline:2px solid #ffcf4e; outline-offset:1px }
+  /* Footer with crawlable internal links */
+  .site-footer{
+    display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:10px;
+    margin:18px auto 8px; padding:10px 14px; max-width:680px;
+    font-family:'VT323',monospace; font-size:16px; color:#fff6e6;
+  }
+  .site-footer a{ color:#ffd98a; text-decoration:none;
+    text-shadow:-1px -1px 0 #0a0f22,1px -1px 0 #0a0f22,-1px 1px 0 #0a0f22,1px 1px 0 #0a0f22 }
+  .site-footer a:hover{ color:#ffcf4e; text-decoration:underline }
   body{
     font-family:'Readex Pro', system-ui, sans-serif;
     color:var(--ink);
@@ -3173,6 +3198,8 @@
 </head>
 <body>
 
+<a class="skip-link" href="#main-content">Skip to content</a>
+
 <!-- viewport-locked gradient so scroll/rotate never shows white -->
 <div class="bg-layer" aria-hidden="true"></div>
 
@@ -3466,7 +3493,7 @@
     </a>
 
     <div class="search g">
-      <input id="search" placeholder="Search archive…" autocomplete="off" />
+      <input id="search" placeholder="Search archive…" autocomplete="off" aria-label="Search the archive" />
       <div class="search-btn">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><circle cx="11" cy="11" r="6"/><path d="m20 20-4.5-4.5"/></svg>
       </div>
@@ -3561,7 +3588,8 @@
         </div>
       </div>
 
-      <div class="feed g">
+      <main class="feed g" id="main-content">
+        <h1 class="sr-only">Yumemono Archive — a preservation of the Yumemono X community</h1>
         <div class="feed-head">
           <div class="fh-left">
             <div class="fh-title outlined">
@@ -3579,7 +3607,7 @@
 
         <div class="msgs" id="msgs"></div>
         <div class="load-sentinel" id="sentinel"></div>
-      </div>
+      </main>
     </div>
 
     <div class="members g">
@@ -3613,12 +3641,20 @@
     </div>
   </div>
 
+  <footer class="site-footer outlined-sm">
+    <a href="/about">About this archive</a>
+    <span aria-hidden="true">·</span>
+    <a href="/privacy">Privacy</a>
+    <span aria-hidden="true">·</span>
+    <a href="https://x.com/i/communities/1924656232708899323" target="_blank" rel="noopener">Yumemono on X ↗</a>
+  </footer>
+
 </div>
 
 <!-- Thread / conversation modal -->
 <div class="thread-modal" id="thread-modal" aria-hidden="true">
-  <div class="thread-card g" role="dialog" aria-modal="true">
-    <span class="close" id="thread-close" aria-label="Close">×</span>
+  <div class="thread-card g" role="dialog" aria-modal="true" aria-label="Conversation thread">
+    <span class="close" id="thread-close" aria-label="Close"><span aria-hidden="true">×</span></span>
     <h3 id="thread-title">Conversation</h3>
     <div id="thread-body"></div>
   </div>
@@ -3637,7 +3673,7 @@
       </g>
     </svg>
   </button>
-  <span class="lb-close" id="lb-close" aria-label="Close">×</span>
+  <span class="lb-close" id="lb-close" aria-label="Close"><span aria-hidden="true">×</span></span>
   <button class="lb-nav lb-prev" id="lb-prev" aria-label="Previous">
     <svg viewBox="0 0 10 14" shape-rendering="crispEdges" width="28" height="38"><g fill="currentColor"><rect x="7" y="2" width="2" height="1"/><rect x="5" y="3" width="2" height="1"/><rect x="3" y="4" width="2" height="1"/><rect x="1" y="5" width="2" height="2"/><rect x="3" y="7" width="2" height="1"/><rect x="5" y="8" width="2" height="1"/><rect x="7" y="9" width="2" height="1"/><rect x="1" y="7" width="2" height="2"/></g></svg>
   </button>
@@ -3662,7 +3698,7 @@
       </g>
     </svg>
   </button>
-  <span class="lb-close" id="vlb-close" aria-label="Close">×</span>
+  <span class="lb-close" id="vlb-close" aria-label="Close"><span aria-hidden="true">×</span></span>
   <button class="lb-nav lb-prev" id="vlb-prev" aria-label="Previous">
     <svg viewBox="0 0 10 14" shape-rendering="crispEdges" width="28" height="38"><g fill="currentColor"><rect x="7" y="2" width="2" height="1"/><rect x="5" y="3" width="2" height="1"/><rect x="3" y="4" width="2" height="1"/><rect x="1" y="5" width="2" height="2"/><rect x="3" y="7" width="2" height="1"/><rect x="5" y="8" width="2" height="1"/><rect x="7" y="9" width="2" height="1"/><rect x="1" y="7" width="2" height="2"/></g></svg>
   </button>
@@ -3679,7 +3715,7 @@
 
 <!-- Gallery window (all media) -->
 <div class="thread-modal" id="gallery-modal" aria-hidden="true">
-  <div class="xp-window gallery-card" role="dialog" aria-modal="true">
+  <div class="xp-window gallery-card" role="dialog" aria-modal="true" aria-label="Gallery — all media">
     <div class="xp-titlebar">
       <div class="xp-title">
         <span class="xp-icon" aria-hidden="true">
@@ -3690,9 +3726,9 @@
         Gallery — all media
       </div>
       <div class="xp-buttons">
-        <button class="xp-btn" type="button" aria-label="Minimize" data-close-gallery>_</button>
-        <button class="xp-btn" type="button" aria-label="Maximize" data-maximize-gallery>◻</button>
-        <button class="xp-btn xp-close" id="gallery-close" type="button" aria-label="Close">×</button>
+        <button class="xp-btn" type="button" aria-label="Minimize" data-close-gallery><span aria-hidden="true">_</span></button>
+        <button class="xp-btn" type="button" aria-label="Maximize" data-maximize-gallery><span aria-hidden="true">◻</span></button>
+        <button class="xp-btn xp-close" id="gallery-close" type="button" aria-label="Close"><span aria-hidden="true">×</span></button>
       </div>
     </div>
     <div class="xp-body gallery-body">
@@ -3714,7 +3750,7 @@
 
 <!-- About / info modal (XP-style window) -->
 <div class="thread-modal" id="about-modal" aria-hidden="true">
-  <div class="xp-window about-card" role="dialog" aria-modal="true">
+  <div class="xp-window about-card" role="dialog" aria-modal="true" aria-label="About this archive">
     <div class="xp-titlebar">
       <div class="xp-title">
         <span class="xp-icon" aria-hidden="true">
@@ -3727,9 +3763,9 @@
         About — Yumemono Archive
       </div>
       <div class="xp-buttons">
-        <button class="xp-btn" type="button" aria-label="Minimize" data-close>_</button>
-        <button class="xp-btn" type="button" aria-label="Maximize" data-maximize>◻</button>
-        <button class="xp-btn xp-close" id="about-close" type="button" aria-label="Close">×</button>
+        <button class="xp-btn" type="button" aria-label="Minimize" data-close><span aria-hidden="true">_</span></button>
+        <button class="xp-btn" type="button" aria-label="Maximize" data-maximize><span aria-hidden="true">◻</span></button>
+        <button class="xp-btn xp-close" id="about-close" type="button" aria-label="Close"><span aria-hidden="true">×</span></button>
       </div>
     </div>
     <div class="xp-body about-body">
@@ -3799,7 +3835,7 @@
 
 <!-- Members modal (XP-style window) -->
 <div class="thread-modal" id="members-modal" aria-hidden="true">
-  <div class="xp-window members-card" role="dialog" aria-modal="true">
+  <div class="xp-window members-card" role="dialog" aria-modal="true" aria-label="Community members">
     <div class="xp-titlebar">
       <div class="xp-title">
         <span class="xp-icon" aria-hidden="true">
@@ -3813,14 +3849,14 @@
         Community members
       </div>
       <div class="xp-buttons">
-        <button class="xp-btn xp-min" type="button" aria-label="Minimize">_</button>
-        <button class="xp-btn xp-max" type="button" aria-label="Maximize">◻</button>
-        <button class="xp-btn xp-close" id="members-close" type="button" aria-label="Close">×</button>
+        <button class="xp-btn xp-min" type="button" aria-label="Minimize"><span aria-hidden="true">_</span></button>
+        <button class="xp-btn xp-max" type="button" aria-label="Maximize"><span aria-hidden="true">◻</span></button>
+        <button class="xp-btn xp-close" id="members-close" type="button" aria-label="Close"><span aria-hidden="true">×</span></button>
       </div>
     </div>
     <div class="xp-body">
       <div class="members-search">
-        <input id="members-search-input" placeholder="Search members…" autocomplete="off" />
+        <input id="members-search-input" placeholder="Search members…" autocomplete="off" aria-label="Search community members" />
         <span class="members-count" id="members-count">—</span>
       </div>
       <div class="members-grid" id="members-grid"></div>
@@ -3834,7 +3870,7 @@
 
 <!-- Guestbook modal (XP-style window, holder-gated via nftroles) -->
 <div class="thread-modal" id="guestbook-modal" aria-hidden="true">
-  <div class="xp-window members-card guestbook-card" role="dialog" aria-modal="true">
+  <div class="xp-window members-card guestbook-card" role="dialog" aria-modal="true" aria-label="Guestbook">
     <div class="xp-titlebar">
       <div class="xp-title">
         <span class="xp-icon" aria-hidden="true">
@@ -3854,9 +3890,9 @@
         Guestbook
       </div>
       <div class="xp-buttons">
-        <button class="xp-btn xp-min" type="button" aria-label="Minimize">_</button>
-        <button class="xp-btn xp-max" type="button" aria-label="Maximize">◻</button>
-        <button class="xp-btn xp-close" id="guestbook-close" type="button" aria-label="Close">×</button>
+        <button class="xp-btn xp-min" type="button" aria-label="Minimize"><span aria-hidden="true">_</span></button>
+        <button class="xp-btn xp-max" type="button" aria-label="Maximize"><span aria-hidden="true">◻</span></button>
+        <button class="xp-btn xp-close" id="guestbook-close" type="button" aria-label="Close"><span aria-hidden="true">×</span></button>
       </div>
     </div>
     <div class="xp-body">
@@ -3874,7 +3910,7 @@
           <span class="gb-badge">verified</span>
           <span class="gb-address" id="guestbook-verified-addr">—</span>
         </div>
-        <textarea id="guestbook-textarea" maxlength="280" placeholder="Leave a message… (max 280 chars)"></textarea>
+        <textarea id="guestbook-textarea" maxlength="280" placeholder="Leave a message… (max 280 chars)" aria-label="Guestbook message"></textarea>
         <div class="gb-media-tray" id="guestbook-media-tray"></div>
         <div class="gb-compose-row">
           <label class="gb-btn gb-attach-btn" for="guestbook-file-input" title="Attach image, gif, or short video (max 4MB, up to 4 files)">
@@ -3901,7 +3937,7 @@
 
 <!-- Profile modal (XP-style window, holder-gated via nftroles) -->
 <div class="thread-modal" id="profile-modal" aria-hidden="true">
-  <div class="xp-window members-card profile-card" role="dialog" aria-modal="true">
+  <div class="xp-window members-card profile-card" role="dialog" aria-modal="true" aria-label="Your guestbook profile">
     <div class="xp-titlebar">
       <div class="xp-title">
         <span class="xp-icon" aria-hidden="true">
@@ -3918,9 +3954,9 @@
         Profile
       </div>
       <div class="xp-buttons">
-        <button class="xp-btn xp-min" type="button" aria-label="Minimize">_</button>
-        <button class="xp-btn xp-max" type="button" aria-label="Maximize">◻</button>
-        <button class="xp-btn xp-close" id="profile-close" type="button" aria-label="Close">×</button>
+        <button class="xp-btn xp-min" type="button" aria-label="Minimize"><span aria-hidden="true">_</span></button>
+        <button class="xp-btn xp-max" type="button" aria-label="Maximize"><span aria-hidden="true">◻</span></button>
+        <button class="xp-btn xp-close" id="profile-close" type="button" aria-label="Close"><span aria-hidden="true">×</span></button>
       </div>
     </div>
     <div class="xp-body">
@@ -4966,6 +5002,17 @@
     }
     $('#msgs').addEventListener('click', onFeedClick);
     $('#thread-body').addEventListener('click', onFeedClick);
+
+    // a11y: keep `inert` in sync with aria-hidden on all modal/lightbox wrappers
+    // so focusable controls inside a closed overlay aren't keyboard-reachable.
+    (function syncModalInert(){
+      const overlays = document.querySelectorAll('.thread-modal[aria-hidden], .lightbox[aria-hidden]');
+      const apply = el => { if(el.getAttribute('aria-hidden') === 'true'){ el.setAttribute('inert',''); } else { el.removeAttribute('inert'); } };
+      overlays.forEach(el => {
+        apply(el);
+        new MutationObserver(() => apply(el)).observe(el, {attributes:true, attributeFilter:['aria-hidden']});
+      });
+    })();
 
     // Video lightbox wiring
     $('#vlb-close').addEventListener('click', closeVideoLightbox);
