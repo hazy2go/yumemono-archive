@@ -4,7 +4,7 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="theme-color" content="#e8bccd" />
-<meta name="description" content="A community-preserved archive of the Yumemono X community — 7,500+ posts, 900+ members, and 1,290+ media items mirrored to durable storage, browsable in a pixel-art Yume-OS aesthetic." />
+<meta name="description" content="A community-preserved archive of the Yumemono X community — 7,500+ posts, 900+ members, and 1,290+ media items mirrored to durable storage." />
 <link rel="canonical" href="https://yumemono.xyz/" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -5003,11 +5003,20 @@
     $('#msgs').addEventListener('click', onFeedClick);
     $('#thread-body').addEventListener('click', onFeedClick);
 
-    // a11y: keep `inert` in sync with aria-hidden on all modal/lightbox wrappers
-    // so focusable controls inside a closed overlay aren't keyboard-reachable.
+    // a11y: a closed overlay must not expose focusable controls. We use `inert`
+    // (which implies aria-hidden semantics for AT) instead of aria-hidden, and
+    // strip any aria-hidden="true" the open/close code sets — otherwise a
+    // focusable button living inside an aria-hidden subtree is an a11y violation.
     (function syncModalInert(){
-      const overlays = document.querySelectorAll('.thread-modal[aria-hidden], .lightbox[aria-hidden]');
-      const apply = el => { if(el.getAttribute('aria-hidden') === 'true'){ el.setAttribute('inert',''); } else { el.removeAttribute('inert'); } };
+      const overlays = document.querySelectorAll('.thread-modal, .lightbox');
+      const apply = el => {
+        if(el.getAttribute('aria-hidden') === 'true'){
+          el.setAttribute('inert','');
+          el.removeAttribute('aria-hidden'); // inert covers AT-hiding; avoids focusable-in-aria-hidden
+        } else {
+          el.removeAttribute('inert');
+        }
+      };
       overlays.forEach(el => {
         apply(el);
         new MutationObserver(() => apply(el)).observe(el, {attributes:true, attributeFilter:['aria-hidden']});
