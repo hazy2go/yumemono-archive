@@ -863,16 +863,20 @@
 
   /* Thread tree: indentation + connector lines */
   .thread-tree{ display:flex; flex-direction:column; gap:12px; padding:0 }
-  .thread-tree .msg[data-depth]{ border-left:3px solid rgba(100,150,220,.5) !important }
   .thread-tree .msg[data-depth="1"]{ margin-left:24px }
   .thread-tree .msg[data-depth="2"]{ margin-left:48px }
   .thread-tree .msg[data-depth="3"]{ margin-left:72px }
   .thread-tree .msg[data-depth="4"],
   .thread-tree .msg[data-depth="5"],
   .thread-tree .msg[data-depth="6"]{ margin-left:96px }
-  /* pastel blue tint for reply posts */
-  .thread-tree .msg[data-depth]{
-    background: linear-gradient(180deg, rgba(195,218,255,.75) 0%, rgba(165,200,245,.45) 100%) !important;
+  /* replies-of-replies (depth 2+) get pastel blue tint + blue connector line */
+  .thread-tree .msg[data-depth="2"],
+  .thread-tree .msg[data-depth="3"],
+  .thread-tree .msg[data-depth="4"],
+  .thread-tree .msg[data-depth="5"],
+  .thread-tree .msg[data-depth="6"]{
+    border-left:3px solid rgba(100,150,220,.55) !important;
+    background: linear-gradient(180deg, rgba(195,218,255,.78) 0%, rgba(165,200,245,.5) 100%) !important;
   }
   /* toggle button — inline at bottom of post, no overlap */
   .tree-toggle{
@@ -4423,9 +4427,11 @@
         ${fmt(replyCount)} ${replyCount === 1 ? 'reply' : 'replies'}
       </div>` : '';
     const depthAttr = inThread && treeDepth > 0 ? ` data-depth="${treeDepth}"` : '';
-    const hiddenAttr = inThread && treeDepth > 0 ? ` style="display:none"` : '';
-    const treeToggle = inThread && treeHasChildren
-      ? `<button class="tree-toggle is-collapsed" title="Show replies" onclick="event.stopPropagation();toggleTreeNode(this)">▶ replies</button>`
+    // Root (0) and direct replies (1) always show; replies-of-replies (2+) hidden until expanded
+    const hiddenAttr = inThread && treeDepth >= 2 ? ' style="display:none"' : '';
+    // Button only on posts whose children are hidden by default (depth >= 1 with children)
+    const treeToggle = inThread && treeHasChildren && treeDepth >= 1
+      ? `<button class="tree-toggle is-collapsed" type="button" data-tree-toggle title="Show replies">▶ replies</button>`
       : '';
     return `
       <div class="msg" data-id="${escapeHtml(p.id)}" ${openable?'data-thread="1"':''}${depthAttr}${hiddenAttr}>
@@ -4914,6 +4920,9 @@
     });
 
     function onFeedClick(e){
+      // Thread tree expand/collapse toggle
+      const toggleBtn = e.target.closest('[data-tree-toggle]');
+      if(toggleBtn){ e.preventDefault(); e.stopPropagation(); toggleTreeNode(toggleBtn); return; }
       // Any element with data-open-post or data-filter-handle routes locally
       const internalLink = e.target.closest('[data-open-post], [data-filter-handle]');
       if(internalLink){
