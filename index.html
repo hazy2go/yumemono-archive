@@ -4302,11 +4302,24 @@
   function quoteHTML(q){
     if(!q) return '';
     const qUrl = q.url || (q.author && q.id ? `https://x.com/${q.author}/status/${q.id}` : '#');
-    const name = q.author_name || q.author || 'unknown';
+    // If author missing but URL has a handle (e.g. twitter.com/handle/status/…), resolve it
+    let resolvedAuthor = q.author;
+    let resolvedAvatar = q.author_avatar;
+    if(!resolvedAuthor && q.url){
+      const m = q.url.match(/(?:twitter|x)\.com\/([^/]+)\/status\//);
+      if(m && m[1] !== 'i'){
+        resolvedAuthor = m[1];
+        if(!resolvedAvatar && state.authors){
+          const a = state.authors.find(a => (a.handle||'').toLowerCase() === resolvedAuthor.toLowerCase());
+          if(a) resolvedAvatar = a.avatar;
+        }
+      }
+    }
+    const name = q.author_name || resolvedAuthor || 'unknown';
     const body = q.body || '';
     const initial = escapeHtml((name).trim().charAt(0).toUpperCase()) || '?';
-    const avatar = q.author_avatar
-      ? `<img class="q-av" src="${escapeHtml(q.author_avatar)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'q-av',textContent:'${initial}',style:'display:grid;place-items:center;font-family:DotGothic16,monospace;font-size:15px;color:#fff6e6;text-shadow:1px 1px 0 #0a0f22'}))">`
+    const avatar = resolvedAvatar
+      ? `<img class="q-av" src="${escapeHtml(resolvedAvatar)}" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'q-av',textContent:'${initial}',style:'display:grid;place-items:center;font-family:DotGothic16,monospace;font-size:15px;color:#fff6e6;text-shadow:1px 1px 0 #0a0f22'}))">`
       : `<div class="q-av" style="display:grid;place-items:center;font-family:DotGothic16,monospace;font-size:15px;color:#fff6e6;text-shadow:1px 1px 0 #0a0f22">${initial}</div>`;
 
     // If the quoted post is itself in the archive, route the click to our
@@ -4317,7 +4330,7 @@
         ${avatar}
         <div class="q-name-block">
           <span class="q-name">${escapeHtml(name)}</span>
-          ${q.author ? `<span class="q-handle">@${escapeHtml(q.author)}</span>` : ''}
+          ${resolvedAuthor ? `<span class="q-handle">@${escapeHtml(resolvedAuthor)}</span>` : ''}
         </div>
         ${inArchive ? `<span class="q-archive-badge" title="Quoted post is preserved in this archive">◆ archived</span>` : ''}
       </div>`;
