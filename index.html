@@ -28,7 +28,8 @@
 <title>Yumemono Archive — 夢物 X Community Preservation</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=VT323&family=M+PLUS+Rounded+1c:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=DotGothic16&family=VT323&family=M+PLUS+Rounded+1c:wght@400;500;700&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=VT323&family=M+PLUS+Rounded+1c:wght@400;500;700&display=swap" rel="stylesheet"></noscript>
 <style>
   :root{
     --navy:#0a2d5c;
@@ -6093,6 +6094,7 @@
       state.stats = stats;
       state.filtered = posts.slice();
       posts.forEach(p => {
+        if(!p.iso && p.ts) p.iso = new Date(p.ts * 1000).toISOString(); // derived (dropped from archive.json to shrink it)
         state.postById.set(p.id, p);
         const k = p.conv || p.id;
         if(!state.byConv.has(k)) state.byConv.set(k, []);

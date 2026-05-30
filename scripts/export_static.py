@@ -262,9 +262,9 @@ def build(
             "id": r["post_x_id"],
             "kind": r["kind"],
             "body": body_expanded,
-            "raw": r["body_text"] or "",
+            # `raw` dropped (unused client-side); `iso` dropped (derived from `ts`
+            # at load time) to shrink archive.json ~20% for a faster first paint.
             "ts": r["posted_at_epoch"],
-            "iso": r["posted_at_iso"],
             "conv": r["conversation_x_id"],
             "parent": r["parent_post_x_id"],
             "url": r["canonical_url"],
