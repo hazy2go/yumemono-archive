@@ -4820,6 +4820,9 @@
 
   function openVideoLightbox(driveId, xUrl){
     const v = $('#vlb-video');
+    // First-frame poster from Drive so we show the frame, not an empty play button,
+    // while the proxied video loads (and if autoplay is blocked).
+    v.setAttribute('poster', `https://drive.google.com/thumbnail?id=${driveId}&sz=w1200`);
     // Cache-buster `?v=5` busts any previously-cached bad response
     v.src = '/v/' + encodeURIComponent(driveId) + '?v=5';
     const a = $('#vlb-open');
