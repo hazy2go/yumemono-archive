@@ -4355,7 +4355,7 @@
           // off the same-origin /v/ proxy with a #t=0.1 media fragment so the
           // browser natively paints the first frame; clicking opens the lightbox.
           return `<div class="m vid poster" data-drive="${driveId}" data-fallback="${escapeHtml(fallbackUrl||'')}" title="Play video">
-            <video class="vposter" src="/v/${encodeURIComponent(driveId)}?v=5#t=0.1" preload="metadata" muted playsinline tabindex="-1"></video>
+            <video class="vposter" data-vsrc="/v/${encodeURIComponent(driveId)}?v=5#t=0.1" preload="metadata" muted playsinline tabindex="-1"></video>
             <span class="play"></span><span class="vlabel">tap to play</span>
           </div>`;
         }
@@ -4653,7 +4653,7 @@
         // proxy with a #t=0.1 fragment so the browser paints the first frame.
         const vsrc = m.drive_id ? `/v/${encodeURIComponent(m.drive_id)}?v=5#t=0.1` : '';
         return `<div class="g-item g-vid" data-idx="${i}" title="@${escapeHtml(m.author||'')}">
-          <video src="${vsrc}" preload="metadata" muted playsinline tabindex="-1"></video>
+          <video data-vsrc="${vsrc}" preload="metadata" muted playsinline tabindex="-1"></video>
           <span class="g-badge"></span>
         </div>`;
       }
@@ -4671,10 +4671,12 @@
     hydrateVideoPosters(grid);
   }
   function openGallery(){
-    renderGallery();
+    // Show first, then render, so video tiles have real layout when the lazy
+    // IntersectionObserver first evaluates them (else nothing paints until scroll).
     $('#gallery-modal').classList.add('open');
     $('#gallery-modal').setAttribute('aria-hidden','false');
     document.body.style.overflow = 'hidden';
+    renderGallery();
   }
   function closeGallery(){
     $('#gallery-modal').classList.remove('open');
@@ -4797,10 +4799,10 @@
       tree.map(({post:p, depth, hasChildren}) =>
         postHTML(p, authorMap, {showThread:false, inThread:true, treeDepth:depth, treeHasChildren:hasChildren})
       ).join('') + '</div>';
-    hydrateVideoPosters($('#thread-body'));
     $('#thread-modal').classList.add('open');
     $('#thread-modal').setAttribute('aria-hidden','false');
     document.body.style.overflow = 'hidden';
+    hydrateVideoPosters($('#thread-body')); // after .open so tiles have layout
   }
   function closeThread(){
     $('#thread-modal').classList.remove('open');
@@ -4825,9 +4827,28 @@
     if(!$('#thread-modal').classList.contains('open')) document.body.style.overflow = '';
   }
 
-  // Video posters are handled natively via a #t=0.1 media fragment on the
-  // <video> tiles (Drive's thumbnail endpoint 404s for all videos now).
-  function hydrateVideoPosters(){ /* no-op: native <video> renders the frame */ }
+  // Video posters: native <video src=…#t=0.1> paints the first frame (Drive's
+  // thumbnail endpoint 404s for all videos now). Tiles carry the URL in
+  // data-vsrc and we attach src only while on/near screen — the gallery can
+  // hold hundreds of video tiles and browsers throttle/never paint if they all
+  // load at once. Releasing src offscreen frees the network + decoder pool.
+  const _vidLazyIO = ('IntersectionObserver' in window) ? new IntersectionObserver(entries => {
+    entries.forEach(en => {
+      const v = en.target;
+      if(en.isIntersecting){
+        if(!v.getAttribute('src') && v.dataset.vsrc) v.setAttribute('src', v.dataset.vsrc);
+      } else if(v.getAttribute('src')){
+        v.removeAttribute('src'); try{ v.load(); }catch(e){}
+      }
+    });
+  }, { rootMargin: '300px' }) : null;
+  function hydrateVideoPosters(root){
+    (root || document).querySelectorAll('video[data-vsrc]:not([data-vh])').forEach(v => {
+      v.setAttribute('data-vh', '1');
+      if(_vidLazyIO) _vidLazyIO.observe(v);
+      else v.setAttribute('src', v.dataset.vsrc); // no IO support → load eagerly
+    });
+  }
 
   function openVideoLightbox(driveId, xUrl){
     const v = $('#vlb-video');
