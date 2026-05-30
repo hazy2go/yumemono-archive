@@ -4690,8 +4690,8 @@
       $('#about-stat-posts').textContent = fmt(s.posts_total);
       $('#about-stat-authors').textContent = fmt(s.authors_total);
       $('#about-stat-media').textContent = fmt(s.media_total);
-      const d = iso => iso ? new Date(iso).toLocaleDateString('en-US',{month:'short',year:'2-digit'}) : '—';
-      $('#about-stat-range').textContent = `${d(s.earliest)}–${d(s.latest)}`;
+      const d = iso => iso ? new Date(iso).toLocaleDateString('en-US',{month:'short',year:'numeric'}) : '—';
+      $('#about-stat-range').textContent = `${d(s.earliest)} – ${d(s.latest)}`;
     }
     $('#about-modal').classList.add('open');
     $('#about-modal').setAttribute('aria-hidden','false');
