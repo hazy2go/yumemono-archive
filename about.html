@@ -16,7 +16,8 @@
 <meta property="og:image" content="https://yumemono.xyz/og.png?v=2" />
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=VT323&family=M+PLUS+Rounded+1c:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=DotGothic16&family=VT323&family=M+PLUS+Rounded+1c:wght@400;500;700&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=VT323&family=M+PLUS+Rounded+1c:wght@400;500;700&display=swap" rel="stylesheet"></noscript>
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -64,12 +65,15 @@
   .stats{ display:flex; flex-wrap:wrap; gap:14px; margin:18px 0; font-family:'VT323',monospace; font-size:18px }
   .stats b{ color:#ffcf4e; font-size:22px; display:block }
   footer{ margin-top:26px; font-family:'VT323',monospace; font-size:15px; color:#cbd0e8 }
+  .skip-link{ position:absolute; left:-9999px; top:0; background:#fff6e6; color:#0a0f22; padding:8px 14px; border:2px solid #0a0f22; font-family:'VT323',monospace; z-index:100 }
+  .skip-link:focus{ left:8px; top:8px }
 </style>
 </head>
 <body>
+<a class="skip-link" href="#main-content">skip to content</a>
 <div class="wrap">
   <a class="home" href="/">← back to the archive</a>
-  <div class="card">
+  <main class="card" id="main-content">
     <h1>About the Yumemono Archive</h1>
     <p class="byline">Built and maintained by <a href="https://x.com/hazy2go" rel="author noopener" target="_blank">hazy</a> · first published 21 May 2026 · last updated 29 May 2026</p>
 
@@ -103,7 +107,7 @@
     <p>See also the <a href="/privacy">privacy notice</a> for how this site handles data.</p>
 
     <footer>Yumemono Archive · a community preservation · yumemono.xyz</footer>
-  </div>
+  </main>
 </div>
 </body>
 </html>
