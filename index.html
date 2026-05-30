@@ -1657,6 +1657,7 @@
     width: 100%; height: 100%; object-fit: cover;
     display: block; image-rendering: auto;
     filter: brightness(.85);
+    pointer-events: none; /* clicks hit the tile → open lightbox */
   }
   /* dim overlay + centered play button on top of the poster */
   .media-grid .m.vid.poster::before{
@@ -3050,9 +3051,11 @@
     transform: translate(-1px,-1px);
     box-shadow: 4px 4px 0 #0a0f22;
   }
-  .g-item img{
+  .g-item img,
+  .g-item video{
     width: 100%; height: 100%; object-fit: cover; display: block;
   }
+  .g-item video{ pointer-events: none; } /* clicks open the lightbox */
   .g-item .g-badge{
     position: absolute; top: 4px; right: 4px;
     width: 22px; height: 22px; border-radius: 4px;
@@ -4348,10 +4351,11 @@
       const driveId = escapeHtml(m.drive_id || '');
       if(isVideo){
         if(fromDrive && m.drive_id){
-          // Drive no longer serves video thumbnails, so we grab the real first
-          // frame client-side from the /v/ proxy (see hydrateVideoPosters).
+          // Drive no longer serves video thumbnails. Render a real (muted) video
+          // off the same-origin /v/ proxy with a #t=0.1 media fragment so the
+          // browser natively paints the first frame; clicking opens the lightbox.
           return `<div class="m vid poster" data-drive="${driveId}" data-fallback="${escapeHtml(fallbackUrl||'')}" title="Play video">
-            <img class="vposter" data-vid-poster="${driveId}" alt="" style="display:none">
+            <video class="vposter" src="/v/${encodeURIComponent(driveId)}?v=5#t=0.1" preload="metadata" muted playsinline tabindex="-1"></video>
             <span class="play"></span><span class="vlabel">tap to play</span>
           </div>`;
         }
@@ -4645,11 +4649,11 @@
       }
       const isVideo = m.type === 'video' || m.type === 'animated_gif' || (m.mime||'').startsWith('video/');
       if(isVideo){
-        // Drive dropped video thumbnails — capture the real first frame from the
-        // /v/ proxy client-side (hydrateVideoPosters). Dark placeholder + play
-        // badge show until the frame lands; the video always plays regardless.
-        return `<div class="g-item g-vid no-thumb" data-idx="${i}" title="@${escapeHtml(m.author||'')}">
-          <img data-vid-poster="${escapeHtml(m.drive_id||'')}" alt="" style="display:none">
+        // Drive dropped video thumbnails — render a real muted video off the /v/
+        // proxy with a #t=0.1 fragment so the browser paints the first frame.
+        const vsrc = m.drive_id ? `/v/${encodeURIComponent(m.drive_id)}?v=5#t=0.1` : '';
+        return `<div class="g-item g-vid" data-idx="${i}" title="@${escapeHtml(m.author||'')}">
+          <video src="${vsrc}" preload="metadata" muted playsinline tabindex="-1"></video>
           <span class="g-badge"></span>
         </div>`;
       }
@@ -4821,72 +4825,14 @@
     if(!$('#thread-modal').classList.contains('open')) document.body.style.overflow = '';
   }
 
-  /* ---- Video first-frame posters --------------------------------------
-     Drive stopped serving video thumbnails (thumbnail?id=… → 404 for all
-     video files). Instead we draw the real first frame from the same-origin
-     /v/ proxy (which sets CORS + accept-ranges) onto a canvas, cache the
-     data URL by driveId, and lazily apply it to tiles via IntersectionObserver. */
-  const _vidPosterCache = new Map();
-  function captureVideoFrame(driveId){
-    if(!driveId) return Promise.resolve(null);
-    if(_vidPosterCache.has(driveId)) return Promise.resolve(_vidPosterCache.get(driveId));
-    const p = new Promise(resolve => {
-      const vid = document.createElement('video');
-      vid.muted = true; vid.playsInline = true; vid.preload = 'auto'; vid.crossOrigin = 'anonymous';
-      let done = false;
-      const finish = data => { if(done) return; done = true; _vidPosterCache.set(driveId, data); try{ vid.removeAttribute('src'); vid.load(); }catch(e){} resolve(data); };
-      const grab = () => {
-        try{
-          const w = vid.videoWidth, h = vid.videoHeight;
-          if(!w || !h){ return; }
-          const cap = 900, scale = Math.min(1, cap / Math.max(w, h));
-          const c = document.createElement('canvas');
-          c.width = Math.round(w * scale); c.height = Math.round(h * scale);
-          c.getContext('2d').drawImage(vid, 0, 0, c.width, c.height);
-          finish(c.toDataURL('image/jpeg', 0.72));
-        }catch(e){ finish(null); }
-      };
-      vid.addEventListener('loadeddata', () => { try{ if(vid.currentTime < 0.04) vid.currentTime = 0.04; else grab(); }catch(e){ grab(); } });
-      vid.addEventListener('seeked', grab);
-      vid.addEventListener('error', () => finish(null));
-      setTimeout(() => finish(null), 15000);
-      vid.src = '/v/' + encodeURIComponent(driveId) + '?v=5';
-    });
-    _vidPosterCache.set(driveId, p); // de-dupe concurrent captures; replaced with value on finish
-    return p;
-  }
-  const _vidPosterIO = ('IntersectionObserver' in window) ? new IntersectionObserver((entries, obs) => {
-    entries.forEach(en => {
-      if(!en.isIntersecting) return;
-      const el = en.target; obs.unobserve(el);
-      captureVideoFrame(el.getAttribute('data-vid-poster')).then(data => {
-        if(!data) return;
-        el.src = data; el.style.display = '';
-        const parent = el.parentElement;
-        if(parent) parent.classList.remove('no-thumb');
-      });
-    });
-  }, { rootMargin: '400px' }) : null;
-  function hydrateVideoPosters(root){
-    if(!_vidPosterIO) return;
-    (root || document).querySelectorAll('[data-vid-poster]:not([data-vh])').forEach(el => {
-      el.setAttribute('data-vh', '1');
-      if(el.getAttribute('data-vid-poster')) _vidPosterIO.observe(el);
-    });
-  }
+  // Video posters are handled natively via a #t=0.1 media fragment on the
+  // <video> tiles (Drive's thumbnail endpoint 404s for all videos now).
+  function hydrateVideoPosters(){ /* no-op: native <video> renders the frame */ }
 
   function openVideoLightbox(driveId, xUrl){
     const v = $('#vlb-video');
-    // Show the real first frame (captured client-side) as the poster while the
-    // proxied video loads / if autoplay is blocked — Drive thumbnails are gone.
-    const cached = _vidPosterCache.get(driveId);
-    if(cached && typeof cached === 'string'){ v.setAttribute('poster', cached); }
-    else {
-      v.removeAttribute('poster');
-      captureVideoFrame(driveId).then(d => { if(d && $('#vlb-video') === v && v.src.includes(encodeURIComponent(driveId))) v.setAttribute('poster', d); });
-    }
-    // Cache-buster `?v=5` busts any previously-cached bad response
-    v.src = '/v/' + encodeURIComponent(driveId) + '?v=5';
+    // #t=0.1 makes the browser paint the first frame before playback starts.
+    v.src = '/v/' + encodeURIComponent(driveId) + '?v=5#t=0.1';
     const a = $('#vlb-open');
     if(xUrl){ a.href = xUrl; a.style.display = ''; } else { a.style.display = 'none'; }
     $('#video-lightbox').classList.add('open');
