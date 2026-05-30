@@ -4832,12 +4832,54 @@
   // data-vsrc and we attach src only while on/near screen — the gallery can
   // hold hundreds of video tiles and browsers throttle/never paint if they all
   // load at once. Releasing src offscreen frees the network + decoder pool.
+  // Once a tile's first frame paints, snapshot it to a cheap JPEG poster and
+  // cache it (keyed by the proxy URL), then drop the heavy <video>. After that
+  // the frame is shown via the cached poster — instant on scroll-back, and we
+  // never hold more than a few live video decoders at once. Same-origin /v/
+  // proxy → canvas isn't tainted.
+  const _vidFrameCache = new Map(); // vsrc -> data URL
+  function _snapshotFirstFrame(v){
+    try{
+      const w = v.videoWidth, h = v.videoHeight;
+      if(!w || !h || v.readyState < 2) return false;
+      const cap = 640, scale = Math.min(1, cap / Math.max(w, h));
+      const c = document.createElement('canvas');
+      c.width = Math.round(w * scale); c.height = Math.round(h * scale);
+      const ctx = c.getContext('2d');
+      ctx.drawImage(v, 0, 0, c.width, c.height);
+      // Reject a blank/all-black grab (Safari sometimes can't paint an unplayed
+      // frame to canvas) — keep showing the live native <video> instead.
+      const px = ctx.getImageData(0, 0, c.width, c.height).data;
+      let min = 255, max = 0;
+      for(let i = 0; i < px.length; i += 4 * 101){ const l = px[i]; if(l < min) min = l; if(l > max) max = l; }
+      if(max - min < 6) return false;
+      const data = c.toDataURL('image/jpeg', 0.72);
+      if(data && data.length > 1200){
+        _vidFrameCache.set(v.dataset.vsrc, data);
+        v.setAttribute('poster', data);
+        v.removeAttribute('src'); try{ v.load(); }catch(e){} // free the decoder; poster stays
+        return true;
+      }
+    }catch(e){}
+    return false;
+  }
   const _vidLazyIO = ('IntersectionObserver' in window) ? new IntersectionObserver(entries => {
     entries.forEach(en => {
       const v = en.target;
       if(en.isIntersecting){
-        if(!v.getAttribute('src') && v.dataset.vsrc) v.setAttribute('src', v.dataset.vsrc);
-      } else if(v.getAttribute('src')){
+        const cached = _vidFrameCache.get(v.dataset.vsrc);
+        if(cached){ if(v.getAttribute('poster') !== cached) v.setAttribute('poster', cached); return; }
+        if(!v.getAttribute('src') && v.dataset.vsrc){
+          v.setAttribute('src', v.dataset.vsrc);
+          if(!v._snapWired){
+            v._snapWired = true;
+            const onReady = () => { _snapshotFirstFrame(v); };
+            v.addEventListener('loadeddata', onReady);
+            v.addEventListener('seeked', onReady);
+          }
+        }
+      } else if(!_vidFrameCache.has(v.dataset.vsrc) && v.getAttribute('src')){
+        // not snapshotted yet and now far offscreen → free it, retry on return
         v.removeAttribute('src'); try{ v.load(); }catch(e){}
       }
     });
